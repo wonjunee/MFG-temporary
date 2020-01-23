@@ -183,13 +183,13 @@ public:
 	    			double nablayPhi = 0;
 
 	    			if(j<n1-1){
-	    				nablaxPhi = (mx[n*n1*n2+i*n1+j+1]-mx[n*n1*n2+i*n1+j])/dx;	
+	    				nablaxPhi = (Phi[n*n1*n2+i*n1+j+1]-Phi[n*n1*n2+i*n1+j])/dx;	
 	    			}else{
 	    				nablaxPhi = 0;
 	    			}
 
 	    			if(i<n2-1){
-	    				nablayPhi = (my[n*n1*n2+(i+1)*n1+j]-my[n*n1*n2+i*n1+j])/dy;
+	    				nablayPhi = (Phi[n*n1*n2+(i+1)*n1+j]-Phi[n*n1*n2+i*n1+j])/dy;
 	    			}else{
 	    				nablayPhi = 0;
 	    			}

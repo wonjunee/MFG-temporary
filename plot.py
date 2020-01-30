@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 from matplotlib import animation
 import numpy as np
 import csv
+import dask.dataframe as dd
+import pandas as pd
 
 directory="./data"
 
@@ -20,11 +22,12 @@ with open("{}/parameters.csv".format(directory)) as F:
 #   Getting Rho Data
 #--------------------------------------------------
 
-with open("{}/rho.csv".format(directory)) as F:
-    for i in F:
-        rho = list(map(lambda x: float(x), i[:-1].split(",")))
+def open_csv(filename,nt,n1,n2):
+    A=dd.read_csv(filename,header=None)
+    return np.array(A).reshape((nt,n2,n1))
 
-rho = np.array(rho).reshape(nt,n1,n2)
+
+rho = open_csv("{}/rho.csv".format(directory),nt,n1,n2)
 
 
 

@@ -251,7 +251,8 @@ public:
     				if(n==nt-1){
     					DtPhi=1.0/dt*(Phi[n*n1*n2+i*n1+j]-Phi[(n-1)*n1*n2+i*n1+j]);
     				}else{
-    					DtPhi=0.5/dt*(Phi[(n+1)*n1*n2+i*n1+j]-Phi[(n-1)*n1*n2+i*n1+j]);
+    					// DtPhi=0.5/dt*(Phi[(n+1)*n1*n2+i*n1+j]-Phi[(n-1)*n1*n2+i*n1+j]);
+                        DtPhi=1.0/dt*(Phi[(n+1)*n1*n2+i*n1+j]-Phi[(n)*n1*n2+i*n1+j]);
     				}
 
 
@@ -294,7 +295,7 @@ public:
 
     	int max_iteration_GD=5000;
     	double tolerance_GD=1e-12;
-    	double alpha=0.05;
+    	double alpha=0.5;
 
     	for(int iterGD=0;iterGD<max_iteration_GD;++iterGD){
 
@@ -397,7 +398,8 @@ public:
 					}else if(n==nt-1){
 						fftps.workspace[i*n1+j]=0;
 					}else{
-						double dtrho=0.5/dt*(rhoTmp[(n+1)*n1*n2+i*n1+j]-rhoTmp[(n-1)*n1*n2+i*n1+j]);
+						// double dtrho=0.5/dt*(rhoTmp[(n+1)*n1*n2+i*n1+j]-rhoTmp[(n-1)*n1*n2+i*n1+j]);
+                        double dtrho=1.0/dt*(rhoTmp[(n)*n1*n2+i*n1+j]-rhoTmp[(n-1)*n1*n2+i*n1+j]);
 						double nablamx=calculate_grad_mx(mxTmp,n,i,j);
 						double nablamy=calculate_grad_my(myTmp,n,i,j);
 

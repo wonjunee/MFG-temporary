@@ -59,4 +59,4 @@ anim = animation.FuncAnimation(fig, animate,
 # the video can be embedded in html5.  You may need to adjust this for
 # your system: for more information, see
 # http://matplotlib.sourceforge.net/api/animation_api.html
-anim.save("video.mp4", fps=5)
+anim.save("video.mp4", fps=30)

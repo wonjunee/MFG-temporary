@@ -27,7 +27,9 @@ def open_csv(filename,nt,n1,n2):
     return np.array(A).reshape((nt,n2,n1))
 
 
-rho = open_csv("{}/rho.csv".format(directory),nt,n1,n2)
+rho1 = open_csv("{}/rho1.csv".format(directory),nt,n1,n2)
+rho2 = open_csv("{}/rho2.csv".format(directory),nt,n1,n2)
+rho3 = open_csv("{}/rho3.csv".format(directory),nt,n1,n2)
 
 
 
@@ -35,28 +37,72 @@ rho = open_csv("{}/rho.csv".format(directory),nt,n1,n2)
 #   Create animation
 #--------------------------------------------------
 
-# First set up the figure, the axis, and the plot element we want to animate
-fig, ax = plt.subplots(1,1,figsize=(5,4))
-cax = ax.imshow(rho[0], cmap='inferno')
-fig.colorbar(cax)
-plt.axis('off')
 
-# animation function.  This is called sequentially
-def animate(n):
-    # fig.clear()
-    cax.set_array(np.flipud(rho[n]))
-    cax.set_clim(np.min(rho[n]), np.max(rho[n]))
-    # cax.set_clim(0, 10)
-    plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho[n])))
-    return cax, 
+import sys
 
-# call the animator.  blit=True means only re-draw the parts that have changed.
-anim = animation.FuncAnimation(fig, animate, 
-                               frames=nt, interval=10, blit=True)
+type_video = sys.argv[1]
 
-# save the animation as an mp4.  This requires ffmpeg or mencoder to be
-# installed.  The extra_args ensure that the x264 codec is used, so that
-# the video can be embedded in html5.  You may need to adjust this for
-# your system: for more information, see
-# http://matplotlib.sourceforge.net/api/animation_api.html
-anim.save("video.mp4", fps=30)
+if type_video=="0":
+
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig, ax = plt.subplots(1,3,figsize=(10,6))
+
+    cax1 = ax[0].imshow(rho1[0], cmap='inferno')
+    cax2 = ax[1].imshow(rho2[0], cmap='inferno')
+    cax3 = ax[2].imshow(rho3[0], cmap='inferno')
+    ax[0].set_axis_off()
+    ax[1].set_axis_off()
+    ax[2].set_axis_off()
+
+    # animation function.  This is called sequentially
+    def animate(n):
+        # fig.clear()
+        cax1.set_array(np.flipud(rho1[n]))
+        cax2.set_array(np.flipud(rho2[n]))
+        cax3.set_array(np.flipud(rho3[n]))
+        cax1.set_clim(0, np.max(rho1))
+        cax2.set_clim(0, np.max(rho2))
+        cax3.set_clim(0, np.max(rho3))
+        # cax1.set_clim(0, 10)
+        plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho2[n])))
+        return cax1, 
+
+    # call the animator.  blit=True means only re-draw the parts that have changed.
+    anim = animation.FuncAnimation(fig, animate, 
+                                   frames=nt, interval=10, blit=True)
+
+    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
+    # installed.  The extra_args ensure that the x264 codec is used, so that
+    # the video can be embedded in html5.  You may need to adjust this for
+    # your system: for more information, see
+    # http://matplotlib.sourceforge.net/api/animation_api.html
+    anim.save("video.mp4", fps=30)
+
+elif type_video=="1":
+
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig, ax = plt.subplots(1,1,figsize=(8,6))
+
+    cax = ax.imshow(rho[0], cmap='inferno')
+    fig.colorbar(cax)
+    plt.axis('off')
+
+    # animation function.  This is called sequentially
+    def animate(n):
+        # fig.clear()
+        cax.set_array(np.flipud(rho[n]))
+        cax.set_clim(0, np.max(rho[n]))
+        # cax1.set_clim(0, 10)
+        plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho[n])))
+        return cax, 
+
+    # call the animator.  blit=True means only re-draw the parts that have changed.
+    anim = animation.FuncAnimation(fig, animate, 
+                                   frames=nt, interval=10, blit=True)
+
+    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
+    # installed.  The extra_args ensure that the x264 codec is used, so that
+    # the video can be embedded in html5.  You may need to adjust this for
+    # your system: for more information, see
+    # http://matplotlib.sourceforge.net/api/animation_api.html
+    anim.save("video.mp4", fps=30)

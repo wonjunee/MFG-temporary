@@ -15,13 +15,17 @@ public:
     double dy;
     double dt;
 
-    poisson_solver(int n1, int n2, int nt, double dx, double dy, double dt) {
+    double eta;
+
+    poisson_solver(int n1, int n2, int nt, double dx, double dy, double dt, double eta=1) {
     	this->n1=n1;
     	this->n2=n2;
     	this->nt=nt;
     	this->dx=dx;
     	this->dy=dy;
     	this->dt=dt;
+
+    	this->eta=eta;
 
         workspace =(double*) fftw_malloc(n1*n2*nt*sizeof(double));
 
@@ -47,7 +51,9 @@ public:
 	    for(int n=0;n<nt;++n){
 	    	for(int i=0;i<n2;i++){
 		        for(int j=0;j<n1;j++){
-		            double negativeLaplacian=2/(dx*dx)*(1-cos(M_PI*(1.0*j)/n1)) + 2/(dy*dy)*(1-cos(M_PI*(1.0*i)/n2)) + 2/(dt*dt)*(1-cos(M_PI*(1.0*n)/nt));
+		            double xpart = 2/(dx*dx)*(1-cos(M_PI*(1.0*j)/n1));
+		        	double ypart = 2/(dy*dy)*(1-cos(M_PI*(1.0*i)/n2));
+		            double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + 2/(dt*dt)*(1-cos(M_PI*(1.0*n)/nt));
 		            kernel[n*n1*n2+i*n1+j]=1+negativeLaplacian;
 		        }
 		    }

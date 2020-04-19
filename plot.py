@@ -45,7 +45,8 @@ type_video = sys.argv[1]
 if type_video=="0":
 
     # First set up the figure, the axis, and the plot element we want to animate
-    fig, ax = plt.subplots(1,3,figsize=(10,6))
+    fig, ax = plt.subplots(1,3,figsize=(12,4.5))
+    fig.subplots_adjust(bottom=0, top=0.85, right=1, left=0)
 
     cax1 = ax[0].imshow(rho1[0], cmap='inferno')
     cax2 = ax[1].imshow(rho2[0], cmap='inferno')
@@ -61,10 +62,14 @@ if type_video=="0":
         cax2.set_array(np.flipud(rho2[n]))
         cax3.set_array(np.flipud(rho3[n]))
         cax1.set_clim(0, np.max(rho1))
-        cax2.set_clim(0, np.max(rho2))
-        cax3.set_clim(0, np.max(rho3))
+        cax2.set_clim(0, np.max(rho2)*0.4)
+        cax3.set_clim(0, 2*np.max(rho3))
+
+        ax[0].set_title("{:.4f}".format(np.sum(rho1[n])))
+        ax[1].set_title("{:.4f}".format(np.sum(rho2[n])))
+        ax[2].set_title("{:.4f}".format(np.sum(rho3[n])))
         # cax1.set_clim(0, 10)
-        plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho2[n])))
+        plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho1[n]+rho2[n]+rho3[n])))
         return cax1, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.

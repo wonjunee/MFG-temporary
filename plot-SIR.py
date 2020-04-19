@@ -30,6 +30,7 @@ def open_and_reshape(filename, n1, n2):
     X.shape = (n1,n2)
     return X
 
+print(n1,n2,nt)
 
 #--------------------------------------------------
 #   Create animation

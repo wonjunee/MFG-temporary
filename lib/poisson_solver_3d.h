@@ -17,6 +17,9 @@ public:
 
     double eta;
 
+    poisson_solver(){
+    	workspace=NULL; u=NULL; kernel=NULL; tridiagonalWorkspace=NULL;
+    }
     poisson_solver(int n1, int n2, int nt, double dx, double dy, double dt, double eta=1) {
     	this->n1=n1;
     	this->n2=n2;
@@ -46,6 +49,15 @@ public:
         create_negative_laplacian_kernel_2d();
     }
 
+    ~poisson_solver(){
+		delete[] u;
+	    delete[] kernel;
+	    delete[] tridiagonalWorkspace;
+	    fftw_free(workspace);
+	    fftw_destroy_plan(planIn);
+	    fftw_destroy_plan(planOut);
+	}
+
     void create_negative_laplacian_kernel_2d(){
 	    
 	    for(int n=0;n<nt;++n){
@@ -53,8 +65,10 @@ public:
 		        for(int j=0;j<n1;j++){
 		            double xpart = 2/(dx*dx)*(1-cos(M_PI*(1.0*j)/n1));
 		        	double ypart = 2/(dy*dy)*(1-cos(M_PI*(1.0*i)/n2));
-		            double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + 2/(dt*dt)*(1-cos(M_PI*(1.0*n)/nt));
-		            kernel[n*n1*n2+i*n1+j]=1+negativeLaplacian;
+		        	double tpart = 2/(dt*dt)*(1-cos(M_PI*(1.0*n)/nt));
+		            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
+		            double negativeLaplacian= xpart + ypart + 1 * ( xpart*xpart + ypart*ypart ) + tpart;
+		            kernel[n*n1*n2+i*n1+j]=1+0.1*negativeLaplacian;
 		        }
 		    }
 	    }
@@ -121,13 +135,5 @@ public:
 	}
 	void back_to_real_space(){
 		fftw_execute(planOut);
-	}
-
-	void destroy_all_fftps(){
-		delete[] u;
-	    delete[] workspace;
-	    delete[] kernel;
-	    fftw_destroy_plan(planIn);
-	    fftw_destroy_plan(planOut);
 	}
 };

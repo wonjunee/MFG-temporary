@@ -27,9 +27,9 @@ def open_csv(filename,nt,n1,n2):
     return np.array(A).reshape((nt,n2,n1))
 
 
+rho0 = open_csv("{}/rho0.csv".format(directory),nt,n1,n2)
 rho1 = open_csv("{}/rho1.csv".format(directory),nt,n1,n2)
 rho2 = open_csv("{}/rho2.csv".format(directory),nt,n1,n2)
-rho3 = open_csv("{}/rho3.csv".format(directory),nt,n1,n2)
 
 
 
@@ -48,9 +48,9 @@ if type_video=="0":
     fig, ax = plt.subplots(1,3,figsize=(12,4.5))
     fig.subplots_adjust(bottom=0, top=0.85, right=1, left=0)
 
-    cax1 = ax[0].imshow(rho1[0], cmap='inferno')
-    cax2 = ax[1].imshow(rho2[0], cmap='inferno')
-    cax3 = ax[2].imshow(rho3[0], cmap='inferno')
+    cax1 = ax[0].imshow(rho0[0], cmap='inferno')
+    cax2 = ax[1].imshow(rho1[0], cmap='inferno')
+    cax3 = ax[2].imshow(rho2[0], cmap='inferno')
     ax[0].set_axis_off()
     ax[1].set_axis_off()
     ax[2].set_axis_off()
@@ -58,18 +58,18 @@ if type_video=="0":
     # animation function.  This is called sequentially
     def animate(n):
         # fig.clear()
-        cax1.set_array(np.flipud(rho1[n]))
-        cax2.set_array(np.flipud(rho2[n]))
-        cax3.set_array(np.flipud(rho3[n]))
-        cax1.set_clim(0, np.max(rho1))
-        cax2.set_clim(0, np.max(rho2)*0.4)
-        cax3.set_clim(0, 2*np.max(rho3))
+        cax1.set_array(np.flipud(rho0[n]))
+        cax2.set_array(np.flipud(rho1[n]))
+        cax3.set_array(np.flipud(rho2[n]))
+        cax1.set_clim(0, np.max(rho0))
+        cax2.set_clim(0, np.max(rho1))
+        cax3.set_clim(0, 2*np.max(rho2))
 
-        ax[0].set_title("{:.4f}".format(np.sum(rho1[n])))
-        ax[1].set_title("{:.4f}".format(np.sum(rho2[n])))
-        ax[2].set_title("{:.4f}".format(np.sum(rho3[n])))
+        ax[0].set_title("{:.4f}".format(np.sum(rho0[n])))
+        ax[1].set_title("{:.4f}".format(np.sum(rho1[n])))
+        ax[2].set_title("{:.4f}".format(np.sum(rho2[n])))
         # cax1.set_clim(0, 10)
-        plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho1[n]+rho2[n]+rho3[n])))
+        plt.suptitle("t={:.4}\n{}".format(n/(nt-1),np.sum(rho0[n]+rho1[n]+rho2[n])))
         return cax1, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.

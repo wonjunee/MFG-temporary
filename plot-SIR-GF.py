@@ -42,13 +42,13 @@ y = np.linspace(0, 1, n2)
 x, y = np.meshgrid(x, y)
 
 # First set up the figure, the axis, and the plot element we want to animate
+rho0=open_and_reshape("./data/rho0-{}.csv".format(0),n1,n2)
 rho1=open_and_reshape("./data/rho1-{}.csv".format(0),n1,n2)
 rho2=open_and_reshape("./data/rho2-{}.csv".format(0),n1,n2)
-rho3=open_and_reshape("./data/rho3-{}.csv".format(0),n1,n2)
 fig, ax = plt.subplots(1,3,figsize=(12,4))
-cax1 = ax[0].imshow(rho1, cmap='inferno')
-cax2 = ax[1].imshow(rho2, cmap='inferno')
-cax3 = ax[2].imshow(rho3, cmap='inferno')
+cax1 = ax[0].imshow(rho0, cmap='inferno')
+cax2 = ax[1].imshow(rho1, cmap='inferno')
+cax3 = ax[2].imshow(rho2, cmap='inferno')
 
 # fig.colorbar(cax2)
 ax[0].set_axis_off()
@@ -56,28 +56,28 @@ ax[1].set_axis_off()
 ax[2].set_axis_off()
 
 # max_rho = np.max(rho)
+max_rho0 = np.max(rho0)
 max_rho1 = np.max(rho1)
 max_rho2 = np.max(rho2)
-max_rho3 = np.max(rho3)
 # animation function.  This is called sequentially
 def animate(n):
 
     print("\rProcessing frame %d/%d..." % (n, nt), end='')
 
     # fig.clear()
+    rho0=open_and_reshape("./data/rho0-{}.csv".format(n),n1,n2)
     rho1=open_and_reshape("./data/rho1-{}.csv".format(n),n1,n2)
     rho2=open_and_reshape("./data/rho2-{}.csv".format(n),n1,n2)
-    rho3=open_and_reshape("./data/rho3-{}.csv".format(n),n1,n2)
     # cax.set_array(np.flipud(rho))
-    cax1.set_array(rho1)
-    cax1.set_clim(np.min(0), np.max(rho1))
-    cax2.set_array(rho2)
-    cax2.set_clim(np.min(0), np.max(rho2))
-    cax3.set_array(rho3)
-    cax3.set_clim(np.min(0), np.max(rho3))
+    cax1.set_array(rho0)
+    cax1.set_clim(np.min(0), np.max(rho0))
+    cax2.set_array(rho1)
+    cax2.set_clim(np.min(0), np.max(rho1))
+    cax3.set_array(rho2)
+    cax3.set_clim(np.min(0), np.max(rho2))
     
     # cax1.set_clim(np.min(0), np.max(rho))
-    plt.suptitle("n={}, sum={:.4f}".format(n,np.sum(rho2)/(n1*n2)),fontsize=6)
+    plt.suptitle("n={}, sum={:.4f}".format(n,np.sum(rho1)/(n1*n2)),fontsize=6)
     return cax1, cax2, cax3,
 
 # call the animator.  blit=True means only re-draw the parts that have changed.

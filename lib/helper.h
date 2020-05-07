@@ -1,3 +1,42 @@
+#ifndef HELPER_H
+#define HELPER_H
+
+#include <iostream>
+#include <fstream>
+
+using namespace std;
+
+void create_bin_file(const double* A, int size, string filename){
+    ofstream out(filename, ios::out | ios::binary);
+    if(!out) {
+        cout << "Cannot open file.";
+        return;
+    }
+
+    out.write((char *) A, size*sizeof(double));
+    out.close();
+}
+
+void create_csv_file_for_parameters(int n1,int n2,int nt){
+    ofstream outfile;
+    outfile.open("./data/parameters.csv");
+    outfile<<n1<<","<<n2<<","<<nt;
+    outfile.close();
+}
+
+void create_csv_file(const double* A,string filename,int n1,int n2,int nt){
+    ofstream outfile;
+    outfile.open(filename);
+    for(int i=0;i<n1*n2*nt;++i){
+        outfile<<A[i]<<"\n";
+    }
+    outfile.close();
+}
+
+double gaussian(const double x, const double y, const double mux, const double muy, const double sigmax, const double sigmay){
+    return exp(-0.5*(pow(x-mux,2)/pow(sigmax,2) + pow(y-muy,2)/pow(sigmay,2) ));
+}
+
 
 double sign(double x){
     
@@ -72,3 +111,6 @@ double cubic_solve(double b, double c, double d){
 }
 
 
+
+
+#endif

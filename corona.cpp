@@ -771,26 +771,17 @@ int main(int argc, char **argv)
     double dy=1.0/n2;
     double dt=1.0/nt;
 
+    // coefficients for the energy functions
+
     double c0=0.01;
     double c1=0.5;
     double c2=0.;
 
+    // coefficients for velocities
+
     double alpha1 = 1.0;
     double alpha2 = 1.0;
     double alpha3 = 1.0;
-
-    cout<<"XXX G-Prox PDHG XXX"<<endl;
-    cout<<endl;
-    cout<<"n1 : "<<n1<<" n2 : "<<n2<<" nt : "<<nt<<" base : "<<base<<endl;
-    cout<<"dx : "<<scientific<<dx<<endl;
-    cout<<"dy : "<<scientific<<dy<<endl;
-    cout<<"dt : "<<scientific<<dt<<endl;
-    cout<<fixed;
-    cout<<"tau           : "<<tau<<endl;
-    cout<<"sigma         : "<<sigma<<endl;
-    cout<<"max_iteration : "<<max_iteration<<endl;
-    cout<<"tolerance     : "<<scientific<<tolerance<<endl;
-    cout<<"eta           : "<<scientific<<eta<<endl;
 
     double* rho[3];
 
@@ -812,21 +803,40 @@ int main(int argc, char **argv)
     init.intialize_rho1(rho[1]);
     init.intialize_rho2(rho[2]);
     // init.intialize_f(f);
-
     for(int i=0;i<n1*n2;++i) f[i] = 0;
 
+    // coefficients for SIR system
+    method.h = 1;
+    method.beta  = 0.1;
+    method.gamma = 0.0 ;
+
+    method.m = 2;
+
+
+    cout<<"XXX G-Prox PDHG XXX"<<endl;
+    cout<<endl;
+    cout<<"n1 : "<<n1<<" n2 : "<<n2<<" nt : "<<nt<<" base : "<<base<<endl;
+    cout<<"dx : "<<scientific<<dx<<endl;
+    cout<<"dy : "<<scientific<<dy<<endl;
+    cout<<"dt : "<<scientific<<dt<<endl;
+    cout<<fixed;
+    cout<<"tau           : "<<tau<<endl;
+    cout<<"sigma         : "<<sigma<<endl;
+    cout<<"max_iteration : "<<max_iteration<<endl;
+    cout<<"tolerance     : "<<scientific<<tolerance<<endl;
+    cout<<"eta           : "<<scientific<<eta<<endl;
+    cout<<"beta          : "<<scientific<<beta<<endl;
+    cout<<"gamma         : "<<scientific<<gamma<endl;
+
+
+
+    // initialize the method
     Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist);
 
     cout<<"\nXXX Starting Iterations XXX"<<endl;
 
     clock_t t;
     t = clock();
-
-    method.h = 1;
-    method.beta  = 0.1;
-    method.gamma = 0.0 ;
-
-    method.m = 2;
 
     string filename;    
 

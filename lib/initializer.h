@@ -29,6 +29,7 @@ public:
 
 	void intialize_rho0(double* rho){
 
+		double sum=0;
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
 
@@ -40,9 +41,15 @@ public:
 	            // }else{
 	            //     rho[i*n1+j] = 0;
 	            // }
-	            rho[i*n1+j] = 2*exp(-20*pow(x-0.5,2)-20*pow(y-0.5,2)) + base;
+	            rho[i*n1+j] = exp(-20*pow(x-0.5,2)-20*pow(y-0.5,2)) + base;
+	            sum += rho[i*n1+j];
 	        }
 	    }
+
+	    for(int i=0;i<n1*n2;++i){
+	        rho[i] *= (n1*n2)/sum;
+	    }
+
 
 	    for(int n=1;n<nt;++n){
 	        for(int i=0;i<n1*n2;++i){
@@ -75,7 +82,7 @@ public:
 	    }
 
 	    for(int i=0;i<n1*n2;++i){
-	        rho[i] *= (n1*n2)/sum * 0.1;
+	        rho[i] *= (n1*n2)/sum*0.8;
 	    }
 
 	    for(int n=1;n<nt;++n){

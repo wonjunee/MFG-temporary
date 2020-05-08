@@ -67,15 +67,15 @@ public:
 		        	double ypart = 2/(dy*dy)*(1-cos(M_PI*(1.0*i)/n2));
 		        	double tpart = 2/(dt*dt)*(1-cos(M_PI*(1.0*n)/nt));
 		            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
-		            double negativeLaplacian= xpart + ypart + 1 * ( xpart*xpart + ypart*ypart ) + tpart;
-		            kernel[n*n1*n2+i*n1+j]=1+0.1*negativeLaplacian;
+		            double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
+		            kernel[n*n1*n2+i*n1+j]=negativeLaplacian;
 		        }
 		    }
 	    }
 		    
 	}
 
-	void perform_inverse_laplacian(){
+	void perform_inverse_laplacian(const double c){
 
 		fftw_execute(planIn);
 
@@ -83,7 +83,7 @@ public:
 			if(kernel[i]==0){
 				workspace[i]=0;	
 			}else{
-				workspace[i]/=8*(n1)*(n2)*(nt)*(kernel[i]);
+				workspace[i]/=8*(n1)*(n2)*(nt)*(1+kernel[i]);
 			}
 			
 		}

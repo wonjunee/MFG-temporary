@@ -45,7 +45,54 @@ type_video = sys.argv[1]
 N = 5
 tlist = [0,0.25,0.5,0.75,1.0]
 
-fig, ax = plt.subplots(2,N,figsize=(9,4))
+
+
+# fig, ax = plt.subplots(2,N,figsize=(9,4))
+
+# fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
+
+# for i in range(N):
+#     n = int((nt-1) * tlist[i]);
+#     ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, np.max(rho0))
+#     ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, np.max(rho1))
+
+
+#     ax[0,i].set_axis_off()
+#     ax[1,i].set_axis_off()
+
+#     ax[0,i].set_title("t = {:.2f}\nsum = {:.2f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
+#     ax[1,i].set_title("sum = {:.2f}".format(np.sum(rho1[n])/(n1*n2)))
+
+# plt.savefig("figures/SI.png")
+# plt.show()
+
+
+# fig, ax = plt.subplots(1,1,figsize=(4,3))
+
+# fig.subplots_adjust(bottom=0.1, top=1.0, right=1, left=0.1, wspace=0, hspace=0.2)
+
+# xx = np.linspace(0,1,nt)
+# yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
+# yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
+
+# # ax.plot(xx,yy0,'.-',label="S")
+# # ax.plot(xx,yy1,'.-',label="I")
+
+# ax.plot(xx,yy0,label="S")
+# ax.plot(xx,yy1,label="I")
+
+# ax.set_xlabel("t")
+# # ax.set_ylim(200,700)
+
+# plt.legend()
+# plt.savefig("figures/SI-plot.png")
+# plt.show()
+
+
+
+
+
+fig, ax = plt.subplots(3,N,figsize=(9,6))
 
 fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
 
@@ -53,34 +100,42 @@ for i in range(N):
     n = int((nt-1) * tlist[i]);
     ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, np.max(rho0))
     ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, np.max(rho1))
+    ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, np.max(rho2)*2)
 
 
     ax[0,i].set_axis_off()
     ax[1,i].set_axis_off()
+    ax[2,i].set_axis_off()
 
     ax[0,i].set_title("t = {:.2f}\nsum = {:.2f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
     ax[1,i].set_title("sum = {:.2f}".format(np.sum(rho1[n])/(n1*n2)))
+    ax[2,i].set_title("sum = {:.2f}".format(np.sum(rho2[n])/(n1*n2)))
 
+plt.savefig("figures/SIR.png")
 plt.show()
 
 
-fig, ax = plt.subplots(1,1,figsize=(3,3))
+fig, ax = plt.subplots(1,1,figsize=(5,3))
+
+fig.subplots_adjust(bottom=0.1, top=1.0, right=1, left=0.1, wspace=0, hspace=0.2)
 
 xx = np.linspace(0,1,nt)
 yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
 yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
+yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/(n1*n2)
 
 # ax.plot(xx,yy0,'.-',label="S")
 # ax.plot(xx,yy1,'.-',label="I")
 
 ax.plot(xx,yy0,label="S")
 ax.plot(xx,yy1,label="I")
+ax.plot(xx,yy2,label="R")
 
 ax.set_xlabel("t")
 # ax.set_ylim(200,700)
 
 plt.legend()
-
+plt.savefig("figures/SIR-plot.png")
 plt.show()
 
 

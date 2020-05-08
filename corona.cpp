@@ -302,7 +302,7 @@ public:
                 rho0[ind] += 0.1*tau*(val - rho0[ind]);
             }
         }
-        
+
         for(int n=1;n<nt;++n){
 
             for(int i=0;i<n2;++i){
@@ -386,6 +386,25 @@ public:
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
 
+        // ----- rho(1,x) = dGstar(phi(1,x)) ------
+
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                int ind = (nt-1)*n1*n2+i*n1+j;
+
+                double eval = 1.0/c2 * (phi[2][ind] - f[i*n1+j]);
+                double val  = 0;
+
+                if(f[i*n1+j] < 0){
+                    val = 0;    
+                }else{
+                    val = exp(eval);
+                }
+
+                rho2[ind] += 0.1*tau*(val - rho2[ind]);
+            }
+        }
+
         for(int n=1;n<nt-1;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
@@ -405,21 +424,6 @@ public:
             }
         }
 
-         // ----- rho(1,x) = dGstar(phi(1,x)) ------
-
-        // for(int i=0;i<n2;++i){
-        //     for(int j=0;j<n1;++j){
-        //         int ind = (nt-1)*n1*n2+i*n1+j;
-
-        //         double eval = 1.0/c2 * (phi[2][ind] - f[i*n1+j]);
-
-        //         if(f[i*n1+j] < 0){
-        //             rho2[ind] = 0;    
-        //         }else{
-        //             rho2[ind] = 1.0/c2 * exp(eval);
-        //         }
-        //     }
-        // }
     }
 
     double calculate_grad_mx(const double* mxTmp, int n, int i, int j){
@@ -546,9 +550,8 @@ public:
                     //     dtrho=1.0/dt*(rho[2][(n)*n1*n2+i*n1+j]-rho[2][(n-1)*n1*n2+i*n1+j]); 
                     // }
 
-
                     if(n==nt-1){
-                        dtrho=0.5/dt*(rho[2][(n)*n1*n2+i*n1+j]-rho[2][(n-1)*n1*n2+i*n1+j]); 
+                        dtrho=1.0/dt*(rho[2][(n)*n1*n2+i*n1+j]-rho[2][(n-1)*n1*n2+i*n1+j]); 
                     }else{
                         dtrho=1.0/dt*(rho[2][(n+1)*n1*n2+i*n1+j]-rho[2][(n)*n1*n2+i*n1+j]); 
                     }
@@ -628,9 +631,9 @@ public:
         double c1_value = pow(c1,1.0/(m-1));
         for(int i=0;i<n1*n2;++i){
             if(f[i]>=0){
-                term0 += phi[0][i]*rho[0][i] - exp((phi[0][(nt-1)*n1*n2+i]-f[i])/c0);
+                term0 += phi[0][i]*rho[0][i] - c0*exp((phi[0][(nt-1)*n1*n2+i]-f[i])/c0);
                 term1 += phi[1][i]*rho[1][i] - 1.0/(mprime*c1_value) * pow(fmax(0, (phi[1][(nt-1)*n1*n2+i]-f[i])), mprime);
-                term2 += phi[2][i]*rho[2][i] - exp((phi[2][(nt-1)*n1*n2+i]-f[i])/c2);    
+                term2 += phi[2][i]*rho[2][i] - c2*exp((phi[2][(nt-1)*n1*n2+i]-f[i])/c2);    
             }
         }
 
@@ -791,7 +794,7 @@ int main(int argc, char **argv)
 
     double c0=0.01;
     double c1=0.5;
-    double c2=0.;
+    double c2=0.001;
 
     // coefficients for velocities
 
@@ -827,7 +830,7 @@ int main(int argc, char **argv)
     // coefficients for SIR system
     method.h = 1;
     method.beta  = 0.1;
-    method.gamma = 0.0 ;
+    method.gamma = 0.001;
 
     method.m = 2;
 

@@ -160,8 +160,8 @@ if type_video=="0":
         cax1.set_array(np.flipud(rho0[n]))
         cax2.set_array(np.flipud(rho1[n]))
         cax3.set_array(np.flipud(rho2[n]))
-        cax1.set_clim(0, np.max(rho0))
-        cax2.set_clim(0, np.max(rho1)*0.1)
+        cax1.set_clim(0, np.max(rho0)*0.4)
+        cax2.set_clim(0, np.max(rho1)*0.4)
         cax3.set_clim(0, 2*np.max(rho2))
 
         ax[0].set_title("{:.4f}".format(np.sum(rho0[n])))

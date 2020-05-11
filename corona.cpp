@@ -43,8 +43,8 @@ int main(int argc, char **argv)
 
     // coefficients for the energy functions
 
-    double c0=0.5;
-    double c1=0.01;
+    double c0=0.01;
+    double c1=0.05;
     double c2=0.0;
 
     // coefficients for velocities
@@ -80,8 +80,8 @@ int main(int argc, char **argv)
 
     // coefficients for SIR system
     method.h = 1;
-    method.beta  = 0.1;
-    method.gamma = 0.0;
+    method.beta  = 0.3;
+    method.gamma = 0.1;
 
     method.m = 2;
 

@@ -55,6 +55,7 @@ public:
 
     int convN;
     double conv_sum;
+    double conv_r;
 
     // For SIR model
 
@@ -115,7 +116,10 @@ public:
         M0 = 0.5;
         // convN = n1/4;
         // convN = convN + (convN % 2) -1; // to make it odd
-        convN = 7;
+        conv_r = 0.1;
+        convN  = 2*conv_r*n1+1;
+        convN  = convN + (convN % 2) -1; // to make it odd
+        cout << "convN : " <<convN << endl;
 
         conv_sum = 0;
         int i = n2/2;
@@ -128,8 +132,10 @@ public:
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
 
-                double eval = calculate_K_xy(x,xx,y,yy);
-                conv_sum += eval;
+                if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
+	                double eval = calculate_K_xy(x,xx,y,yy);
+	                conv_sum += eval;
+	            }
             }
         }
 
@@ -194,7 +200,7 @@ public:
     */
 
     double calculate_K_xy(double x, double xx, double y, double yy) const{
-        double var = 0.1;
+        double var = 0.2;
         return 1.0/(var*sqrt(2*M_PI))*exp(- ((x-xx)*(x-xx)+(y-yy)*(y-yy))/(2*(var*var)));
     }
 
@@ -209,16 +215,16 @@ public:
             for(int j1=j-convN/2;j1<j+convN/2+1;++j1){
         // for(int i1=fmax(0,i-convN/2);i1<fmin(n2,i+convN/2+1);++i1){
         //     for(int j1=fmax(0,j-convN/2);j1<fmin(n1,j+convN/2+1);++j1){
-                
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
+                if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
+	                double eval = calculate_K_xy(x,xx,y,yy);
 
-                double eval = calculate_K_xy(x,xx,y,yy);
+	                int ii = fmin(n2-1, fmax(0, i1));
+	                int jj = fmin(n1-1, fmax(0, j1));
 
-                int ii = fmin(n2-1, fmax(0, i1));
-                int jj = fmin(n1-1, fmax(0, j1));
-
-                convval += eval * rho[ii*n1+jj];
+	                convval += eval * rho[ii*n1+jj];
+	            }
             }
         }
 
@@ -231,23 +237,24 @@ public:
 
         double xx=(j+0.5)/n1;
         double yy=(i+0.5)/n2;
-        double sum = 0;
+
         for(int i1=i-convN/2;i1<i+convN/2+1;++i1){
             for(int j1=j-convN/2;j1<j+convN/2+1;++j1){
                 
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
+                if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
+	                double eval = calculate_K_xy(x,xx,y,yy) ;
 
-                double eval = calculate_K_xy(x,xx,y,yy) ;
+	                int ii = fmin(n2-1, fmax(0, i1));
+	                int jj = fmin(n1-1, fmax(0, j1));
 
-                int ii = fmin(n2-1, fmax(0, i1));
-                int jj = fmin(n1-1, fmax(0, j1));
-
-                convval += eval * rho[ii*n1+jj] * phi[ii*n1+jj];
-                sum += eval;
+	                convval += eval * rho[ii*n1+jj] * phi[ii*n1+jj];
+                }
+                
             }
         }
-        convval/=sum;
+        convval/=conv_sum;
         return convval;
     }
 
@@ -424,21 +431,8 @@ public:
 
     void update_rho0(double* rho0,const double* rho1, const double* rho2,const double* mx,const double* my,const double* f){
 
-         // ----- rho(1,x) = dGstar(phi(1,x)) ------
 
-        for(int i=0;i<n2;++i){
-            for(int j=0;j<n1;++j){
-                int ind = (nt-1)*n1*n2+i*n1+j;
-                double val = calculate_deltaE0prime(rho0, f, i, j);
-
-                // rho0[ind] = 1.0/(1.0+tau*0.5)*(rho0[ind] + tau*0.5*val);  
-                rho0[ind] += tau/nt * (val - rho0[ind]);
-                // rho0[ind] = val;
-            }
-        }
-
-
-        for(int n=1;n<nt-1;++n){
+        for(int n=1;n<nt;++n){
 
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
@@ -460,24 +454,27 @@ public:
             }
         }
 
-    }
 
-    void update_rho1(const double* rho0,double* rho1, const double* rho2,const double* mx,const double* my,const double* f){
 
         // ----- rho(1,x) = dGstar(phi(1,x)) ------
 
         for(int i=0;i<n2;++i){
             for(int j=0;j<n1;++j){
                 int ind = (nt-1)*n1*n2+i*n1+j;
-                double val = calculate_deltaE1prime(rho1, f, i, j);
+                double val = calculate_deltaE0prime(rho0, f, i, j);
 
-                // rho1[ind] = 1.0/(1.0+tau)*(rho1[ind] + tau*0.5*val);  
-                rho1[ind] += tau/nt * (val - rho1[ind]);
-                // rho1[ind] = val;
+                // rho0[ind] = 1.0/(1.0+tau*0.5)*(rho0[ind] + tau*0.5*val);  
+                rho0[ind] += 0.05 * (val - rho0[ind]);
+                // rho0[ind] = val;
             }
         }
 
-        for(int n=1;n<nt-1;++n){
+
+    }
+
+    void update_rho1(const double* rho0,double* rho1, const double* rho2,const double* mx,const double* my,const double* f){
+
+        for(int n=1;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -500,28 +497,26 @@ public:
             }
         }
 
+        // ----- rho(1,x) = dGstar(phi(1,x)) ------
+
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                int ind = (nt-1)*n1*n2+i*n1+j;
+                double val = calculate_deltaE1prime(rho1, f, i, j);
+
+                // rho1[ind] = 1.0/(1.0+tau)*(rho1[ind] + tau*0.5*val);  
+                rho1[ind] += 0.05 * (val - rho1[ind]);
+                // rho1[ind] = val;
+            }
+        }
 
 
     }
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
 
-        // ----- rho(1,x) = dGstar(phi(1,x)) ------
 
-        if(c2 > 0){
-            for(int i=0;i<n2;++i){
-                for(int j=0;j<n1;++j){
-                    int ind = (nt-1)*n1*n2+i*n1+j;
-                    double val = calculate_deltaE2prime(rho2, f, i, j);
-
-                    // rho2[ind] = 1.0/(1.0+tau*0.5)*(rho2[ind] + tau*0.5*val);  
-                    rho2[ind] += tau/nt * (val - rho2[ind]);     
-                    // rho2[ind] = val;
-                }
-            }
-        }
-
-        for(int n=1;n<nt-1;++n){
+        for(int n=1;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -536,6 +531,22 @@ public:
 
                     double newrhovalue=cubic_solve(tau*Dtphi + tau*Clist[2]*Deltaphi - rho2[ind], 0, -0.5/h*tau*alphalist[2]*mvalue*mvalue);
                     rho2[ind]=fmax(0,newrhovalue);
+                }
+            }
+        }
+
+
+        // ----- rho(1,x) = dGstar(phi(1,x)) ------
+
+        if(c2 > 0){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    int ind = (nt-1)*n1*n2+i*n1+j;
+                    double val = calculate_deltaE2prime(rho2, f, i, j);
+
+                    // rho2[ind] = 1.0/(1.0+tau*0.5)*(rho2[ind] + tau*0.5*val);  
+                    rho2[ind] += 0.05 * (val - rho2[ind]);     
+                    // rho2[ind] = val;
                 }
             }
         }

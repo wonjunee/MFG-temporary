@@ -74,15 +74,15 @@ public:
 	            //     rho[i*n1+j] = 0;
 	            // }
 
-	            rho[i*n1+j] = exp(-60*pow(x-0.5,2)-60*pow(y-0.5,2)) + base;
+	            // rho[i*n1+j] = exp(-60*pow(x-0.5,2)-60*pow(y-0.5,2)) + base;
 
-	            // rho[i*n1+j] = fmax(0.01-pow(x-0.5,2)-pow(y-0.5,2),0);
+	            rho[i*n1+j] = fmax(0.01-pow(x-0.5,2)-pow(y-0.5,2),0);
 	            sum += rho[i*n1+j];
 	        }
 	    }
 
 	    for(int i=0;i<n1*n2;++i){
-	        rho[i] *= (n1*n2)/sum*0.8;
+	        rho[i] *= (n1*n2)/sum*0.5;
 	    }
 
 	    for(int n=1;n<nt;++n){

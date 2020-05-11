@@ -85,7 +85,7 @@ tlist = [0,0.25,0.5,0.75,1.0]
 # # ax.set_ylim(200,700)
 
 # plt.legend()
-# plt.savefig("figures/SI-plot.png")
+# plt.savefig("figures/SI-plot.eps")
 # plt.show()
 
 
@@ -134,8 +134,8 @@ ax.plot(xx,yy2,label="R")
 ax.set_xlabel("t")
 # ax.set_ylim(200,700)
 
-plt.legend()
-plt.savefig("figures/SIR-plot.png")
+plt.legend(loc='lower left', framealpha=0.5)
+plt.savefig("figures/SIR-plot.eps")
 plt.show()
 
 
@@ -161,7 +161,7 @@ if type_video=="0":
         cax2.set_array(np.flipud(rho1[n]))
         cax3.set_array(np.flipud(rho2[n]))
         cax1.set_clim(0, np.max(rho0))
-        cax2.set_clim(0, np.max(rho1))
+        cax2.set_clim(0, np.max(rho1)*0.1)
         cax3.set_clim(0, 2*np.max(rho2))
 
         ax[0].set_title("{:.4f}".format(np.sum(rho0[n])))

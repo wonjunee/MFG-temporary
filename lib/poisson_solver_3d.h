@@ -83,7 +83,7 @@ public:
 			if(kernel[i]==0){
 				workspace[i]=0;	
 			}else{
-				workspace[i]/=8*(n1)*(n2)*(nt)*(1+kernel[i]);
+				workspace[i]/=8*(n1)*(n2)*(nt)*(c+kernel[i]);
 			}
 			
 		}

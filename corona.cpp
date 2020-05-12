@@ -32,8 +32,6 @@ int main(int argc, char **argv)
     int max_iteration=stoi(argv[7]);
     double eta = stod(argv[8]);
     int skip=stoi(argv[9]);
-    
-    create_csv_file_for_parameters(n1,n2,nt);
 
     double base=0;
 
@@ -43,9 +41,9 @@ int main(int argc, char **argv)
 
     // coefficients for the energy functions
 
-    double c0=0.01;
-    double c1=0.05;
-    double c2=0.0;
+    double c0=0.001;
+    double c1=0.1;
+    double c2=0.01;
 
     // coefficients for velocities
 
@@ -53,13 +51,21 @@ int main(int argc, char **argv)
     double alpha2 = 1.0;
     double alpha3 = 1.0;
 
+    // coefficients for SIR model
+    double beta  = 0.4;
+    double gamma = 0.4;
+
     double* rho[3];
 
     for(int i=0;i<3;++i){
         rho[i] = new double[n1*n2*nt];
     }
 
-    double* f = new double[n1*n2]; // f is an obstacle
+    double** f_arr = new double*[3]; // f is an obstacle
+
+    for(int k=0;k<3;++k){
+        f_arr[k] = new double[n1*n2];
+    }
 
     double Clist[] = {eta, eta, eta};  
 
@@ -73,18 +79,16 @@ int main(int argc, char **argv)
     init.intialize_rho1(rho[1]);
     init.intialize_rho2(rho[2]);
     // init.intialize_f(f);
-    for(int i=0;i<n1*n2;++i) f[i] = 0;
+    for(int k=0;k<3;++k) for(int i=0;i<n1*n2;++i) f_arr[k][i] = 0;
 
     // initialize the method
     Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist);
 
     // coefficients for SIR system
     method.h = 1;
-    method.beta  = 0.3;
-    method.gamma = 0.1;
-
     method.m = 2;
-
+    method.beta  = beta;
+    method.gamma = gamma;
 
     cout<<"XXX G-Prox PDHG XXX"<<endl;
     cout<<endl;
@@ -100,6 +104,9 @@ int main(int argc, char **argv)
     cout<<"eta           : "<<scientific<<eta<<endl;
     cout<<"beta          : "<<scientific<<method.beta<<endl;
     cout<<"gamma         : "<<scientific<<method.gamma<<endl;
+
+
+    create_csv_file_for_parameters(n1,n2,nt,c0,c1,c2,method.beta,method.gamma);
 
 
 
@@ -119,7 +126,7 @@ int main(int argc, char **argv)
 
     for(int iter=0; iter<1; ++iter)
     {
-        method.run(rho,f,skip);   
+        method.run(rho,f_arr,skip);   
 
         filename="./data/rho0-"+to_string(iter+1)+".csv";
         create_bin_file(&rho[0][(nt-1)*n1*n2],n1*n2,filename);
@@ -142,12 +149,9 @@ int main(int argc, char **argv)
 
     printf ("CPU time for Iterations: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
-    // create_csv_file(rho,"./data/rho.csv",n1,n2,nt);
-
-    create_csv_file_for_parameters(n1,n2,nt);
-
     for(int k=0;k<3;++k){
         delete[] rho[k];
+        delete[] f_arr[k];
     }
-    delete[] f;
+    delete[] f_arr;
 }

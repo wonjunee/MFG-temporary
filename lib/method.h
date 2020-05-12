@@ -20,8 +20,8 @@ public:
     double dy;
     double dt;
 
-    double tau;
-    double sigma;
+    double* tau;
+    double* sigma;
     double h;
 
     int max_iteration;
@@ -35,6 +35,9 @@ public:
     double* mytmps[3];
     double* phi[3];
 
+    double xi;
+    double TOTAL_SUM;
+
     double energy;
     double previous_energy;
     double previous_dual;
@@ -47,8 +50,7 @@ public:
     double c1;
     double c2;
 
-    double* Clist;
-
+    double* etalist;
     double* alphalist;
 
     poisson_solver* fftps;
@@ -81,7 +83,7 @@ public:
             phi[i]=NULL;    
         }
         
-        Clist=NULL;
+        etalist=NULL;
         alphalist=NULL;
         fftps=NULL;
     }
@@ -90,23 +92,33 @@ public:
            double tau, double sigma, int max_iteration, double tolerance, 
            double c0, double c1, double c2, 
            double alpha1, double alpha2, double alpha3,
-           double* Clist){
+           double* etalist){
         this->n1=n1;
         this->n2=n2;
         this->nt=nt;
         this->dx=dx;
         this->dy=dy;
         this->dt=dt;
-        this->tau=tau;
-        this->sigma=sigma;
+        
         this->max_iteration=max_iteration;
         this->tolerance=tolerance;
+
+        this->tau  =new double[3];
+        this->sigma=new double[3];
+
+        this->tau[0] = tau;
+        this->tau[1] = tau*0.5;
+        this->tau[2] = tau*0.5;
+
+        this->sigma[0] = sigma;
+        this->sigma[1] = sigma;
+        this->sigma[2] = sigma;
 
         this->c0=c0;
         this->c1=c1;
         this->c2=c2;
 
-        this->Clist = Clist; // this contains the eta values for viscosity terms
+        this->etalist = etalist; // this contains the eta values for viscosity terms
 
         alphalist = new double[3];
         alphalist[0] = alpha1;
@@ -118,7 +130,7 @@ public:
         // convN = convN + (convN % 2) -1; // to make it odd
         conv_r = 0.1;
         convN  = 2*conv_r*n1+1;
-        convN  = convN + (convN % 2) -1; // to make it odd
+        convN  = convN + (convN % 2) - 1; // to make it odd
         cout << "convN : " <<convN << endl;
 
         conv_sum = 0;
@@ -151,7 +163,7 @@ public:
         clock_t t;
         t = clock();
             
-        double eta = Clist[0];
+        double eta = etalist[0];
         fftps = new poisson_solver(n1,n2,nt,dx,dy,dt,eta);
 
         t = clock() - t;
@@ -169,38 +181,17 @@ public:
             delete[] phi[i];
         }
         delete[] alphalist;
+        delete tau;
+        delete sigma;
         delete fftps;
     }
-
-    /* 
-        Set function pointers
-    */
-
-    // void set_E0(double (*f)(double)){
-    //     E0 = f;
-    // }
-    // void set_E1(double (*f)(double)){
-    //     E1 = f;
-    // }
-    // void set_E2(double (*f)(double)){
-    //     E2 = f;
-    // }
-    // void set_deltaE0(double (*f)(const double*)){
-    //     deltaE0 = f;
-    // }
-    // void set_deltaE1(double (*f)(const double*)){
-    //     deltaE1 = f;
-    // }
-    // void set_deltaE2(double (*f)(const double*)){
-    //     deltaE2 = f;
-    // }
 
     /* 
         Convolution functions
     */
 
     double calculate_K_xy(double x, double xx, double y, double yy) const{
-        double var = 0.2;
+        double var = 0.05;
         return 1.0/(var*sqrt(2*M_PI))*exp(- ((x-xx)*(x-xx)+(y-yy)*(y-yy))/(2*(var*var)));
     }
 
@@ -297,8 +288,8 @@ public:
                         rhovaly = 0.5*(rho[n*n1*n2+(i+1)*n1+j]+rho[n*n1*n2+i*n1+j]);
                     }
                     
-                    mx[n*n1*n2+i*n1+j] = h * rhovalx/(tau * alphalist[ind] + h * rhovalx) * (mx[n*n1*n2+i*n1+j] - tau * nablaxphi);
-                    my[n*n1*n2+i*n1+j] = h * rhovaly/(tau * alphalist[ind] + h * rhovaly) * (my[n*n1*n2+i*n1+j] - tau * nablayphi);
+                    mx[n*n1*n2+i*n1+j] = h * rhovalx/(tau[ind] * alphalist[ind] + h * rhovalx) * (mx[n*n1*n2+i*n1+j] - tau[ind] * nablaxphi);
+                    my[n*n1*n2+i*n1+j] = h * rhovaly/(tau[ind] * alphalist[ind] + h * rhovaly) * (my[n*n1*n2+i*n1+j] - tau[ind] * nablayphi);
 
                     if(j==n1-1){
                         mx[n*n1*n2+i*n1+j]=0;
@@ -382,16 +373,10 @@ public:
         // rho log rho
         double eval = 1.0/c2 * (phi[2][ind] - f[i*n1+j]);
         double val  = 0;
-        if(f[i*n1+j] >= 0) val = c2*exp(eval);
 
-        // double eval = 1.0/c2 * (phi[2][ind] - f[i*n1+j]) + rho[i*n1+j];
+        // if(f[i*n1+j] >= 0) val = c2*exp(eval);
 
-        // if(eval <= 0) eval = 0;
-
-        // double val = 0;
-        // if(f[i*n1+j] >= 0 ){
-        //     val = eval * phi[2][ind] - 0.5 * c2 * (eval - rho[i*n1+j]) * (eval - rho[i*n1+j]);
-        // }
+        val = phi[2][ind]*rho[ind];
 
         return val;
     }
@@ -432,6 +417,20 @@ public:
     void update_rho0(double* rho0,const double* rho1, const double* rho2,const double* mx,const double* my,const double* f){
 
 
+        // ----- rho(1,x) = dGstar(phi(1,x)) ------
+
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                int ind = (nt-1)*n1*n2+i*n1+j;
+                double val = calculate_deltaE0prime(rho0, f, i, j);
+
+                // rho0[ind] = 1.0/(1.0+tau*0.5)*(rho0[ind] + tau*0.5*val);  
+                rho0[ind] += 0.01 * (val - rho0[ind]);
+                // rho0[ind] = val;
+            }
+        }
+
+
         for(int n=1;n<nt;++n){
 
             for(int i=0;i<n2;++i){
@@ -447,8 +446,8 @@ public:
                     double convval  =  calculate_convval(&rho1[n*n1*n2],i,j);
                     double convval2 = calculate_convval2(&rho1[n*n1*n2],&phi[1][n*n1*n2],i,j);
 
-                    // double newrhovalue=cubic_solve(tau*Dtphi + tau*Clist[0]*Deltaphi - rho0[ind] + tau*beta*rho1[ind]*(phi[1][ind]-phi[0][ind]), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
-                    double newrhovalue=cubic_solve(tau*Dtphi + tau*Clist[0]*Deltaphi - rho0[ind] + tau*beta*(convval2 - phi[0][ind]*convval), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
+                    // double newrhovalue=cubic_solve(tau*Dtphi + tau*etalist[0]*Deltaphi - rho0[ind] + tau*beta*rho1[ind]*(phi[1][ind]-phi[0][ind]), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
+                    double newrhovalue=cubic_solve(tau[0] * (Dtphi + etalist[0]*Deltaphi + xi) - rho0[ind] + tau[0]*beta*(convval2 - phi[0][ind]*convval), 0, -0.5/h*tau[0]*alphalist[0]*mvalue*mvalue);
                     rho0[n*n1*n2+i*n1+j]=fmax(0,newrhovalue);
                 }
             }
@@ -456,23 +455,22 @@ public:
 
 
 
+    }
+
+    void update_rho1(const double* rho0,double* rho1, const double* rho2,const double* mx,const double* my,const double* f){
+
         // ----- rho(1,x) = dGstar(phi(1,x)) ------
 
         for(int i=0;i<n2;++i){
             for(int j=0;j<n1;++j){
                 int ind = (nt-1)*n1*n2+i*n1+j;
-                double val = calculate_deltaE0prime(rho0, f, i, j);
+                double val = calculate_deltaE1prime(rho1, f, i, j);
 
-                // rho0[ind] = 1.0/(1.0+tau*0.5)*(rho0[ind] + tau*0.5*val);  
-                rho0[ind] += 0.05 * (val - rho0[ind]);
-                // rho0[ind] = val;
+                // rho1[ind] = 1.0/(1.0+tau[1])*(rho1[ind] + tau[1]*0.5*val);  
+                rho1[ind] += 0.01 * (val - rho1[ind]);
+                // rho1[ind] = val;
             }
         }
-
-
-    }
-
-    void update_rho1(const double* rho0,double* rho1, const double* rho2,const double* mx,const double* my,const double* f){
 
         for(int n=1;n<nt;++n){
             for(int i=0;i<n2;++i){
@@ -490,23 +488,10 @@ public:
                     double convval  = calculate_convval(&rho0[n*n1*n2],i,j);
                     double convval2 = calculate_convval2(&rho0[n*n1*n2],&phi[0][n*n1*n2],i,j);
 
-                    // double newrhovalue=cubic_solve(tau*Dtphi + tau*Clist[1]*Deltaphi - rho1[ind] + tau*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau*alphalist[1]*mvalue*mvalue);
-                    double newrhovalue=cubic_solve(tau*Dtphi + tau*Clist[1]*Deltaphi - rho1[ind] + tau*beta*(phi[1][ind]*convval - convval2) + tau*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau*alphalist[1]*mvalue*mvalue);
+                    // double newrhovalue=cubic_solve(tau[1]*Dtphi + tau[1]*etalist[1]*Deltaphi - rho1[ind] + tau[1]*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
+                    double newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi) - rho1[ind] + tau[1]*beta*(phi[1][ind]*convval - convval2) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
                     rho1[ind]=fmax(0,newrhovalue);
                 }
-            }
-        }
-
-        // ----- rho(1,x) = dGstar(phi(1,x)) ------
-
-        for(int i=0;i<n2;++i){
-            for(int j=0;j<n1;++j){
-                int ind = (nt-1)*n1*n2+i*n1+j;
-                double val = calculate_deltaE1prime(rho1, f, i, j);
-
-                // rho1[ind] = 1.0/(1.0+tau)*(rho1[ind] + tau*0.5*val);  
-                rho1[ind] += 0.05 * (val - rho1[ind]);
-                // rho1[ind] = val;
             }
         }
 
@@ -515,6 +500,20 @@ public:
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
 
+        // ----- rho(1,x) = dGstar(phi(1,x)) ------
+
+        // if(c2 > 0){
+        //     for(int i=0;i<n2;++i){
+        //         for(int j=0;j<n1;++j){
+        //             int ind = (nt-1)*n1*n2+i*n1+j;
+        //             double val = calculate_deltaE2prime(rho2, f, i, j);
+
+        //             // rho2[ind] = 1.0/(1.0+tau[2]*0.5)*(rho2[ind] + tau[2]*0.5*val);  
+        //             rho2[ind] += 0.01 * (val - rho2[ind]);     
+        //             // rho2[ind] = val;
+        //         }
+        //     }
+        // }
 
         for(int n=1;n<nt;++n){
             for(int i=0;i<n2;++i){
@@ -529,27 +528,14 @@ public:
 
                     calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[2]);
 
-                    double newrhovalue=cubic_solve(tau*Dtphi + tau*Clist[2]*Deltaphi - rho2[ind], 0, -0.5/h*tau*alphalist[2]*mvalue*mvalue);
+                    double newrhovalue=cubic_solve(tau[2] * (Dtphi + etalist[2]*Deltaphi + xi) - rho2[ind], 0, -0.5/h*tau[2]*alphalist[2]*mvalue*mvalue);
                     rho2[ind]=fmax(0,newrhovalue);
                 }
             }
         }
 
 
-        // ----- rho(1,x) = dGstar(phi(1,x)) ------
 
-        if(c2 > 0){
-            for(int i=0;i<n2;++i){
-                for(int j=0;j<n1;++j){
-                    int ind = (nt-1)*n1*n2+i*n1+j;
-                    double val = calculate_deltaE2prime(rho2, f, i, j);
-
-                    // rho2[ind] = 1.0/(1.0+tau*0.5)*(rho2[ind] + tau*0.5*val);  
-                    rho2[ind] += 0.05 * (val - rho2[ind]);     
-                    // rho2[ind] = val;
-                }
-            }
-        }
 
     }
 
@@ -601,13 +587,13 @@ public:
 
         // Update 0 < t < 1
 
-        for(int i=0;i<n2;++i){
-        	for(int j=0;j<n1;++j){
-        		int ind = (nt-1)*n1*n2+i*n1+j;
-        		double val = c0 * (rho[0][ind] - rho[0][i*n1+j]);
-        		phi[0][ind] += sigma/nt * (val - phi[0][ind]);
-        	}
-        }
+        // for(int i=0;i<n2;++i){
+        // 	for(int j=0;j<n1;++j){
+        // 		int ind = (nt-1)*n1*n2+i*n1+j;
+        // 		double val = c0 * (rho[0][ind] - rho[0][i*n1+j]);
+        // 		phi[0][ind] += sigma[0]/nt * (val - phi[0][ind]);
+        // 	}
+        // }
 
         for(int n=0;n<nt;++n){  
             for(int i=0;i<n2;++i){
@@ -624,15 +610,15 @@ public:
 
                     double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
 
-                    // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - Clist[0]*Deltarho); 
-                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - Clist[0]*Deltarho); 
+                    // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
+                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - etalist[0]*Deltarho); 
                 }
             }
         }
 
-        fftps->perform_inverse_laplacian(c0);
+        fftps->perform_inverse_laplacian(beta);
         for(int i=0;i<n1*n2*nt;++i){
-            phi[0][i] += sigma*fftps->workspace[i];
+            phi[0][i] += sigma[0]*fftps->workspace[i];
         }
     }
 
@@ -640,13 +626,13 @@ public:
 
         // Update 0 < t < 1
 
-        for(int i=0;i<n2;++i){
-        	for(int j=0;j<n1;++j){
-        		int ind = (nt-1)*n1*n2+i*n1+j;
-        		double val = c1 * rho[1][ind];
-        		phi[1][ind] += sigma/nt * (val - phi[1][ind]);
-        	}
-        }
+        // for(int i=0;i<n2;++i){
+        // 	for(int j=0;j<n1;++j){
+        // 		int ind = (nt-1)*n1*n2+i*n1+j;
+        // 		double val = c1 * rho[1][ind];
+        // 		phi[1][ind] += sigma[1]/nt * (val - phi[1][ind]);
+        // 	}
+        // }
 
         for(int n=0;n<nt;++n){  
             for(int i=0;i<n2;++i){
@@ -664,15 +650,15 @@ public:
 
                     double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
 
-                    // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*rho[0][ind]*rho[1][ind] + gamma*rho[1][ind] - Clist[1]*Deltarho); 
-                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*convval*rho[1][ind] + gamma*rho[1][ind] - Clist[1]*Deltarho); 
+                    // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*rho[0][ind]*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
+                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*convval*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
                 }
             }
         }
 
-        fftps->perform_inverse_laplacian(c1);
+        fftps->perform_inverse_laplacian(beta);
         for(int i=0;i<n1*n2*nt;++i){
-            phi[1][i] += sigma*fftps->workspace[i];
+            phi[1][i] += sigma[1]*fftps->workspace[i];
         }
     }
 
@@ -680,17 +666,17 @@ public:
 
         // Update 0 < t < 1
 
-        for(int i=0;i<n2;++i){
-        	for(int j=0;j<n1;++j){
-        		int ind = (nt-1)*n1*n2+i*n1+j;
+        // for(int i=0;i<n2;++i){
+        // 	for(int j=0;j<n1;++j){
+        // 		int ind = (nt-1)*n1*n2+i*n1+j;
 
-        		double val = 0;
-        		if(rho[2][ind] > 0){
-        			val = c2*log(rho[2][ind]);
-        		}
-        		phi[2][ind] += sigma/nt * (val - phi[2][ind]);
-        	}
-        }    	
+        // 		double val = 0;
+        // 		if(rho[2][ind] > 0){
+        // 			val = c2*log(rho[2][ind]);
+        // 		}
+        // 		phi[2][ind] += sigma[2]/nt * (val - phi[2][ind]);
+        // 	}
+        // }    	
 
         // Update 0 < t < 1
 
@@ -709,15 +695,25 @@ public:
                                       -1.0/(dy*dy) * (-rho[2][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[2][n*n1*n2+i*n1+j]-rho[2][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
 
 
-                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho + nablamx + nablamy - gamma*rho[1][ind] - Clist[2]*Deltarho); 
+                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho + nablamx + nablamy - gamma*rho[1][ind] - etalist[2]*Deltarho); 
                 }
             }
         }
 
-        fftps->perform_inverse_laplacian(c2);
+        fftps->perform_inverse_laplacian(gamma*0.1);
         for(int i=0;i<n1*n2*nt;++i){
-            phi[2][i] += sigma*fftps->workspace[i];
+            phi[2][i] += sigma[2]*fftps->workspace[i];
         }
+    }
+
+    void update_xi(double* const rho[]){
+    	double rho_sum = 0;
+    	for(int k=0;k<3;++k){
+    		for(int i=0;i<n1*n2*nt;++i){
+    			rho_sum += rho[k][i];
+    		}
+    	}
+    	xi += sigma[0] * (rho_sum/(n1*n2*nt) - TOTAL_SUM);
     }
 
     double calculate_energy_num(double* const rho[],double* const  mx[], double* const my[], const int num) const{
@@ -745,7 +741,7 @@ public:
     }
 
 
-    double calculate_energy(double* const rho[]) const{
+    double calculate_energy(double* const rho[], double* const* f) const{
         double sum = 0;
         for(int i=0;i<3;++i){
             sum += calculate_energy_num(rho,mx,my,i);
@@ -755,16 +751,16 @@ public:
         for(int i=0;i<n1*n2;++i){
             int ind = (nt-1)*n1*n2+i;
             // if(rho[0][ind] > 0) sum1 += c0*(rho[0][ind]*log(rho[0][ind]) - rho[0][ind]);
-            if(rho[0][ind] >= 0) sum1 += c0/2.0*(rho[0][ind] - rho[0][i])*(rho[0][ind] - rho[0][i]);
-            if(rho[1][ind] >= 0) sum1 += c1/m*rho[1][ind]*rho[1][ind];
-            if(rho[2][ind] >  0) sum1 += c2*(rho[2][ind]*log(rho[2][ind]) - rho[2][ind]);
+            if(rho[0][ind] >= 0) sum1 += c0/2.0*(rho[0][ind] - rho[0][i])*(rho[0][ind] - rho[0][i]) + rho[0][ind]*f[0][i];
+            if(rho[1][ind] >= 0) sum1 += c1/m*rho[1][ind]*rho[1][ind] 							    + rho[1][ind]*f[1][i];
+            if(rho[2][ind] >  0) sum1 += c2*(rho[2][ind]*log(rho[2][ind]) - rho[2][ind]) 		    + rho[2][ind]*f[2][i];
         }
         sum1 /= 1.0*n1*n2;
         
         return sum + sum1;
     }
 
-    double calculate_dual(double* const rho[], const double* f) const{   
+    double calculate_dual(double* const rho[], double* const* f) const{   
 
         double term0=0;
         double term1=0;
@@ -772,15 +768,13 @@ public:
 
         for(int i=0;i<n2;++i){
             for(int j=0;j<n1;++j){
-                if(f[i*n1+j]>=0){
-                    // if(c0>0) term0 += phi[0][i]*rho[0][i] - c0*exp((phi[0][(nt-1)*n1*n2+i]-f[i])/c0);
-                    // term1 += phi[1][i]*rho[1][i] - 1.0/(mprime*c1_value) * pow(fmax(0, (phi[1][(nt-1)*n1*n2+i]-f[i])), mprime);
-                    // if(c2>0) term2 += phi[2][i]*rho[2][i] - c2*exp((phi[2][(nt-1)*n1*n2+i]-f[i])/c2);    
+                // if(c0>0) term0 += phi[0][i]*rho[0][i] - c0*exp((phi[0][(nt-1)*n1*n2+i]-f[i])/c0);
+                // term1 += phi[1][i]*rho[1][i] - 1.0/(mprime*c1_value) * pow(fmax(0, (phi[1][(nt-1)*n1*n2+i]-f[i])), mprime);
+                // if(c2>0) term2 += phi[2][i]*rho[2][i] - c2*exp((phi[2][(nt-1)*n1*n2+i]-f[i])/c2);    
 
-                    if(c0>0) term0 += phi[0][i]*rho[0][i] - calculate_E0prime(rho[0],f,i,j);
-                    term1 += phi[1][i]*rho[1][i] - calculate_E1prime(rho[1],f,i,j);
-                    if(c2>0) term2 += phi[2][i]*rho[2][i] - calculate_E2prime(rho[2],f,i,j);
-                }    
+                if(c0>0) term0 += phi[0][i*n1+j]*rho[0][i*n1+j] - calculate_E0prime(rho[0],f[0],i,j);
+                if(c1>0) term1 += phi[1][i*n1+j]*rho[1][i*n1+j] - calculate_E1prime(rho[1],f[1],i,j);
+                if(c2>0) term2 += phi[2][i*n1+j]*rho[2][i*n1+j] - calculate_E2prime(rho[2],f[2],i,j);
             }
             
         }
@@ -792,6 +786,7 @@ public:
                     double convval0 = calculate_convval(&rho[0][n*n1*n2],i,j);
                     double convval1 = calculate_convval(&rho[1][n*n1*n2],i,j);
                     term3 += beta * (rho[0][n*n1*n2+i*n1+j] * convval1 * phi[0][n*n1*n2+i*n1+j] - rho[1][n*n1*n2+i*n1+j] * convval0 * phi[1][n*n1*n2+i*n1+j]);
+                    // term3 += beta * (rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j] * phi[0][n*n1*n2+i*n1+j] - rho[1][n*n1*n2+i*n1+j] * rho[0][n*n1*n2+i*n1+j] * phi[1][n*n1*n2+i*n1+j]);
                 }
             }
         }
@@ -799,19 +794,118 @@ public:
         return (term0+term1+term2)/(n1*n2) + term3/(n1*n2*nt);
     }
 
-    void display_log(const int iterPDHG, const double tau, const double sigma, const double energy, const double dual, const double error, const double dual_gap) const{
-        cout<<"iter : "<< setw(8) << iterPDHG+1<< " tau : "<< setw(13) <<tau <<" sigma : " << setw(13)<<sigma <<" energy : " << setw(13)<<energy <<" dual : " << setw(13) << dual << " relative_error : " << setw(13) << error <<" dual_gap : " << setw(13) << dual_gap << endl;  
+    // check feasibility
+    double check_sanity(double* const rho[], double* const  mx[], double* const my[]){
+    	double sum = 0;
+
+
+        for(int n=0;n<nt;++n){  
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    double dtrho = calculate_dtrho(rho[0], n, i, j);
+
+                    double nablamx=calculate_grad_mx(mx[0],n,i,j);
+                    double nablamy=calculate_grad_my(my[0],n,i,j);
+
+                    int ind = n*n1*n2+i*n1+j;
+
+                    double Deltarho = -1.0/(dx*dx) * (-rho[0][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
+                                      -1.0/(dy*dy) * (-rho[0][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
+
+                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
+
+                   	double val = (dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - etalist[0]*Deltarho); 
+
+                   	sum += fabs(val);
+                }
+            }
+        }
+
+
+        for(int n=0;n<nt;++n){  
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    double dtrho = calculate_dtrho(rho[1], n, i, j);
+
+
+                    double nablamx=calculate_grad_mx(mx[1],n,i,j);
+                    double nablamy=calculate_grad_my(my[1],n,i,j);
+
+                    int ind = n*n1*n2+i*n1+j;
+
+                    double Deltarho = -1.0/(dx*dx) * (-rho[1][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
+                                      -1.0/(dy*dy) * (-rho[1][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
+
+                    double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
+
+                    // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*rho[0][ind]*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
+                    double val = (dtrho+nablamx+nablamy - beta*convval*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
+                    sum += fabs(val);
+                }
+            }
+        }
+
+
+        for(int n=0;n<nt;++n){  
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    double dtrho = calculate_dtrho(rho[2], n, i, j);
+
+                    double nablamx=calculate_grad_mx(mx[2],n,i,j);
+                    double nablamy=calculate_grad_my(my[2],n,i,j);
+
+                    int ind = n*n1*n2+i*n1+j;
+
+
+                    double Deltarho = -1.0/(dx*dx) * (-rho[2][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[2][n*n1*n2+i*n1+j]-rho[2][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
+                                      -1.0/(dy*dy) * (-rho[2][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[2][n*n1*n2+i*n1+j]-rho[2][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
+
+
+                    double val = (dtrho + nablamx + nablamy - gamma*rho[1][ind] - etalist[2]*Deltarho); 
+                    sum += fabs(val);
+                }
+            }
+        }
+
+        return sum/(nt*n1*n2);
+
+
     }
 
-    void run(double* rho[], const double* f, int skip=1){
+    void update_step_sizes(double& tau, double& sigma, const double error, const double relative_dual_error, const double beta_1, const double beta_2){
+    	if(error > relative_dual_error*beta_1){
+            tau   *= beta_2;
+            sigma /= beta_2*1.1;
+        }
+
+        if(error < relative_dual_error/beta_1){
+            tau   /= beta_2*1.1;
+            sigma *= beta_2;
+        }
+    }
+
+    void display_log(const int iterPDHG, const double tau, const double sigma, const double energy, const double dual, const double error, const double dual_gap, const double sanity_value) const{
+        cout<<"iter : "<< setw(8) << iterPDHG+1<< " tau : "<< setw(13) <<tau <<" sigma : " << setw(13)<<sigma <<" energy : " << setw(13)<<energy <<" dual : " << setw(13) << dual << " relative_error : " << setw(13) << error <<" dual_gap : " << setw(13) << dual_gap<<" sanity_value : " << setw(13) << sanity_value << endl;  
+    }
+
+    void run(double* rho[], double* const* f, int skip=1){
+
+    	TOTAL_SUM = 0;
+    	for(int k=0;k<3;++k){
+    		for(int i=0;i<n1*n2*nt;++i){
+	    		TOTAL_SUM += rho[k][i];
+	    	}	
+    	}
+    	TOTAL_SUM /= (nt*n1*n2);
+    	xi = 1;
 
         previous_energy=1;
         previous_dual=1;
-        double error=1, dual_gap=1, energy=1, dual=0;
+        double error=1, dual_gap=1, energy=1, dual=0, sanity_value=1;
         int iterPDHG;
 
-        double beta_1 = 1.2;
-        double beta_2 = 1;
+        double beta_1 = 1.5;
+        double beta_2 = 0.99;
 
         for(iterPDHG=0; iterPDHG<max_iteration; ++iterPDHG){
 
@@ -822,34 +916,38 @@ public:
                 memcpy(mytmps[i],my[i],n1*n2*nt*sizeof(double));    
             }
 
-            update_rho0(rho[0],rho[1],rho[2],mx[0],my[0],f);
-            update_rho1(rho[0],rho[1],rho[2],mx[1],my[1],f);
-            update_rho2(rho[0],rho[1],rho[2],mx[2],my[2],f);            
-
-            // normalize rho
-            
-                for(int n=1;n<nt;++n){
-                    double sumtmp = 0;
-                    double sum = 0;
-                    for(int k=0;k<3;++k){
-                        for(int i=0;i<n1*n2;++i){
-                            sumtmp += rhotmps[k][n*n1*n2+i];
-                            sum    += rho[k][n*n1*n2+i];
-                        }
-                    }
-                    for(int k=0;k<3;++k){
-                        for(int i=0;i<n1*n2;++i){
-                            if(sum > 0){
-                                rho[k][n*n1*n2+i] *= sumtmp/sum;    
-                            }
-                        }
-                    }
-                }
+            update_rho0(rho[0],rho[1],rho[2],mx[0],my[0],f[0]);
+            update_rho1(rho[0],rho[1],rho[2],mx[1],my[1],f[1]);
+            update_rho2(rho[0],rho[1],rho[2],mx[2],my[2],f[2]);            
 
 
             update_m(mx[0],my[0],rho[0],phi[0],0);
             update_m(mx[1],my[1],rho[1],phi[1],1);
             update_m(mx[2],my[2],rho[2],phi[2],2);
+
+
+
+            // normalize rho
+            
+                // for(int n=1;n<nt;++n){
+                //     double sumtmp = 0;
+                //     double sum = 0;
+                //     for(int k=0;k<3;++k){
+                //         for(int i=0;i<n1*n2;++i){
+                //             sumtmp += rhotmps[k][n*n1*n2+i];
+                //             sum    += rho[k][n*n1*n2+i];
+                //         }
+                //     }
+                //     for(int k=0;k<3;++k){
+                //         for(int i=0;i<n1*n2;++i){
+                //             if(sum > 0){
+                //                 rho[k][n*n1*n2+i] *= sumtmp/sum;    
+                //             }
+                //         }
+                //     }
+                // }
+
+
 
             for(int k=0;k<3;++k){
                 for(int i=0;i<n1*n2*nt;++i){
@@ -858,11 +956,13 @@ public:
                     mytmps[k][i]  = 2*my[k][i]  - mytmps[k][i];
                 }
             }
-            update_phi0(rhotmps,mxtmps[0],mytmps[0],f); 
-            update_phi1(rhotmps,mxtmps[1],mytmps[1],f); 
-            update_phi2(rhotmps,mxtmps[2],mytmps[2],f); 
+            update_phi0(rhotmps,mxtmps[0],mytmps[0],f[0]); 
+            update_phi1(rhotmps,mxtmps[1],mytmps[1],f[1]); 
+            update_phi2(rhotmps,mxtmps[2],mytmps[2],f[2]); 
 
-            energy=calculate_energy(rho);
+            update_xi(rhotmps);
+
+            energy=calculate_energy(rho,f);
             error=fabs((energy-previous_energy)/previous_energy);
             previous_energy=energy;
 
@@ -870,26 +970,28 @@ public:
             double relative_dual_error=fabs((dual-previous_dual)/previous_dual);
             previous_dual=dual;
 
-            if(error > relative_dual_error*beta_1){
-                tau   *= beta_2;
-                // sigma /= beta_2;
+            // update_step_sizes(tau[0], sigma[0], error, relative_dual_error, beta_1, beta_2);
+            // update_step_sizes(tau[0], sigma[0], error, relative_dual_error, beta_1, beta_2);
+            // update_step_sizes(tau[1], sigma[1], error, relative_dual_error, beta_1, beta_2);
+            // update_step_sizes(tau[2], sigma[2], error, relative_dual_error, beta_1, beta_2);
+
+
+
+            for(int k=0;k<3;++k){
+            	tau[k]   = fmin(0.6,fmax(1e-2,tau[k]));
+            	sigma[k] = fmin(0.6,fmax(1e-2,sigma[k]));
             }
 
-            if(error < relative_dual_error/beta_1){
-                tau   /= beta_2;
-                // sigma *= beta_2;
-            }
-
-            tau = fmax(1e-5,fmin(10, tau));
-            sigma = fmax(1e-5,fmin(10, sigma));
 
             dual_gap = energy-dual;
 
                 // adaptive step size
 
+            sanity_value = check_sanity(rho, mx, my);
+
             if((iterPDHG+1)%skip==0){
 
-                display_log(iterPDHG,  tau,  sigma,  energy,  dual,  error,  dual_gap);
+                display_log(iterPDHG,  tau[0],  sigma[0],  energy,  dual,  error,  dual_gap, sanity_value);
 
                 create_csv_file(rho[0],"./data/rho0.csv",n1,n2,nt);
                 create_csv_file(rho[1],"./data/rho1.csv",n1,n2,nt);
@@ -899,7 +1001,7 @@ public:
         }
 
         cout<<"The method is done!!"<<endl;
-        display_log(iterPDHG,  tau,  sigma,  energy,  dual,  error,  dual_gap);
+        display_log(iterPDHG,  tau[0],  sigma[0],  energy,  dual,  error,  dual_gap, sanity_value);
 
         cout<<"Iterations     : "<<iterPDHG<<endl;
         cout<<"Energy         : "<<energy<<endl;

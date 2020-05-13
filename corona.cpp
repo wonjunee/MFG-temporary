@@ -52,8 +52,8 @@ int main(int argc, char **argv)
     double alpha3 = 1.0;
 
     // coefficients for SIR model
-    double beta  = 0.4;
-    double gamma = 0.4;
+    double beta  = 0.1;
+    double gamma = 0.9;
 
     double* rho[3];
 

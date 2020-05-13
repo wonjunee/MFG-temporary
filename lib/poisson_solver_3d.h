@@ -80,60 +80,120 @@ public:
 		fftw_execute(planIn);
 
 		for(int i=0;i<n1*n2*nt;++i){
-			if(kernel[i]==0){
+			double val = (c+kernel[i]);
+			if(val==0){
 				workspace[i]=0;	
 			}else{
-				workspace[i]/=8*(n1)*(n2)*(nt)*(c+kernel[i]);
+				workspace[i]/=8*(n1)*(n2)*(nt)*val;
 			}
 			
 		}
 
 		fftw_execute(planOut);
 	}
+};
 
 
-	void forward_tridiagonal_sweep(){
+class poisson_solver_2d{
+public:
+    fftw_plan planIn;
+    fftw_plan planOut;
+    double *workspace;
+    double *u;
+    double *kernel;
 
-	    for(int i=0;i<n1*n2;i++){
-	        tridiagonalWorkspace[i]=0.0/1.0; // c
-	        u[i]= u[i]/1.0;	// d
-	    }
-	     
-	    for(int k=1;k<nt-1;k++){
-	        for(int i=0;i<n1*n2;i++){
-	            double alpha=kernel[i]*dt*dt;
-	            tridiagonalWorkspace[k*n1*n2+i]=-1/(2+alpha+tridiagonalWorkspace[(k-1)*n1*n2+i]);
-	            u[k*n1*n2+i]=(u[k*n1*n2+i]+u[(k-1)*n1*n2+i])/(2+alpha+tridiagonalWorkspace[(k-1)*n1*n2+i]);
-	        }
-	    }
+    int n1;
+    int n2;
+    double dx;
+    double dy;
+
+    double eta;
+
+    poisson_solver_2d(){
+    	workspace=NULL; u=NULL; kernel=NULL;
+    }
+    poisson_solver_2d(int n1, int n2, double dx, double dy, double eta=1) {
+    	this->n1=n1;
+    	this->n2=n2;
+    	this->dx=dx;
+    	this->dy=dy;
+
+    	this->eta=eta;
+
+        workspace =(double*) fftw_malloc(n1*n2*sizeof(double));
+
+		// planIn = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT10,FFTW_REDFT10, FFTW_MEASURE);
+		// planOut = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT01,FFTW_REDFT01, FFTW_MEASURE);
+
+		planIn=fftw_plan_r2r_2d(n2, n1, workspace, workspace,
+                                 FFTW_REDFT10, FFTW_REDFT10,
+                                 FFTW_MEASURE);
+    	planOut=fftw_plan_r2r_2d(n2, n1, workspace, workspace,
+                                 FFTW_REDFT01, FFTW_REDFT01,
+                                 FFTW_MEASURE);
+
+		u=new double[n1*n2];
+        kernel=new double[n1*n2];
+
+        create_negative_laplacian_kernel_2d();
+    }
+
+    ~poisson_solver_2d(){
+		delete[] u;
+	    delete[] kernel;
+	    fftw_free(workspace);
+	    fftw_destroy_plan(planIn);
+	    fftw_destroy_plan(planOut);
+	}
+
+    void create_negative_laplacian_kernel_2d(){
 	    
-	    for(int i=0;i<n1*n2;i++){
-	        u[(nt-1)*n1*n2+i]=u[(nt-1)*n1*n2+i]/1.0;
-	    }	    
-	}
-
-	void backward_tridiagonal_sweep(){
-	    for(int k=nt-2;k>=0;k--){
-	        for(int i=0;i<n1*n2;i++){
-	            u[k*n1*n2+i]=u[k*n1*n2+i]-tridiagonalWorkspace[k*n1*n2+i]*u[(k+1)*n1*n2+i];
+    	for(int i=0;i<n2;i++){
+	        for(int j=0;j<n1;j++){
+	            double xpart = 2/(dx*dx)*(1-cos(M_PI*(1.0*j)/n1));
+	        	double ypart = 2/(dy*dy)*(1-cos(M_PI*(1.0*i)/n2));
+	            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
+	            double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart );
+	            kernel[i*n1+j]=negativeLaplacian;
 	        }
-	        
 	    }
+		    
 	}
 
-	void get_fourier_coefficients(double* u){
-
-		for(int i=0;i<n1*n2;++i){
-			workspace[i]/=1.0/(dt*dt);	
-		}
+	void perform_inverse_laplacian(const double c){
 
 		fftw_execute(planIn);
 
+
 		for(int i=0;i<n1*n2;++i){
-			u[i]=workspace[i]/(4.0*n1*n2);
+			double val = c + kernel[i];
+			if(val==0){
+				workspace[i]=0;	
+			}else{
+				workspace[i]/=4*(n1)*(n2)*val;
+			}
 		}
+
+		fftw_execute(planOut);
 	}
-	void back_to_real_space(){
+
+	void perform_inverse_laplacian_phiT(const double c, const double* phiT){
+
+		fftw_execute(planIn);
+
+
+		for(int i=0;i<n1*n2;++i){
+			double val = kernel[i];
+			if(phiT[i]>0){
+				val += c;
+			}
+			if(val==0){
+				workspace[i]=0;	
+			}else{
+				workspace[i]/=4*(n1)*(n2)*val;
+			}
+		}
+
 		fftw_execute(planOut);
 	}
 };

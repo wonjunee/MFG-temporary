@@ -30,6 +30,7 @@ public:
 	void intialize_rho0(double* rho){
 
 		double sum=0;
+		double vmax=0;
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
 
@@ -42,12 +43,14 @@ public:
 	            //     rho[i*n1+j] = 0;
 	            // }
 	            rho[i*n1+j] = exp(-20*pow(x-0.5,2)-20*pow(y-0.5,2)) + base;
-	            sum += rho[i*n1+j];
+	            // sum += rho[i*n1+j];
+	            vmax = fmax(vmax, rho[i*n1+j]);
 	        }
 	    }
 
 	    for(int i=0;i<n1*n2;++i){
-	        rho[i] *= (n1*n2)/sum;
+	        // rho[i] *= (n1*n2)/sum;
+	        rho[i] /= vmax;
 	    }
 
 
@@ -61,6 +64,7 @@ public:
 	void intialize_rho1(double* rho){
 
 	    double sum=0;
+	    double vmax = 0;
 
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
@@ -74,15 +78,17 @@ public:
 	            //     rho[i*n1+j] = 0;
 	            // }
 
-	            // rho[i*n1+j] = exp(-60*pow(x-0.5,2)-60*pow(y-0.5,2)) + base;
+	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = fmax(0.03-pow(x-0.5,2)-pow(y-0.5,2),0);
-	            sum += rho[i*n1+j];
+	            rho[i*n1+j] = fmax(0.03-pow(x-0.6,2)-pow(y-0.6,2),0);
+	            // sum += rho[i*n1+j];
+	            vmax = fmax(vmax, rho[i*n1+j]);
 	        }
 	    }
 
 	    for(int i=0;i<n1*n2;++i){
-	        rho[i] *= (n1*n2)/sum*0.5;
+	        // rho[i] *= (n1*n2)/sum*0.5;
+	        rho[i] /= vmax;
 	    }
 
 	    for(int n=1;n<nt;++n){

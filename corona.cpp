@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     // coefficients for the energy functions
 
     double c0=0.001;
-    double c1=0.1;
+    double c1=0.5;
     double c2=0.01;
 
     // coefficients for velocities
@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     // coefficients for SIR model
     double beta  = 0.01;
-    double gamma = 0.2;
+    double gamma = 0.1;
 
     double* rho[3];
 

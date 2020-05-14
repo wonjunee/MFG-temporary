@@ -39,6 +39,8 @@ public:
     double* xitmp;
     double TOTAL_SUM;
 
+    double* karr;
+
     double energy;
     double previous_energy;
     double previous_dual;
@@ -66,6 +68,7 @@ public:
     double beta;
     double gamma;
 
+
     // function pointers for terminal functions
     // double (*E0)(double);
     // double (*E1)(double);
@@ -79,14 +82,15 @@ public:
 
     Method(){
         for(int i=0;i<3;++i){
-            phitmps[i]=NULL;
-            mx[i]=NULL;my[i]=NULL;
-            phi[i]=NULL;    
+            phitmps[i]=nullptr;
+            mx[i]=nullptr;
+            my[i]=nullptr;
+            phi[i]=nullptr;
         }
         
-        etalist=NULL;
-        alphalist=NULL;
-        fftps=NULL;
+        etalist=nullptr;
+        alphalist=nullptr;
+        fftps=nullptr;
     }
 
     Method(int n1, int n2, int nt, double dx, double dy, double dt, 
@@ -126,6 +130,10 @@ public:
         alphalist[1] = alpha2;
         alphalist[2] = alpha3;
 
+        karr = new double[3];
+        karr[0] = 5e-2;
+        karr[1] = 5e-2;
+        karr[2] = 5e-2;
 
         xi    = new double[nt];
         xitmp = new double[nt];
@@ -137,8 +145,8 @@ public:
         // convN = n1/4;
         // convN = convN + (convN % 2) -1; // to make it odd
         conv_r = 0.05;
-        convN  = 2*conv_r*n1+1;
-        convN  = convN + (convN % 2) - 1; // to make it odd
+        convN  = 2* ( (int) conv_r*n1) + 1;
+        convN  = 1;
         cout << "convN : " <<convN << endl;
 
         conv_sum = 0;
@@ -165,6 +173,17 @@ public:
             phi[i]     = new double[n1*n2*nt];
             phitmps[i] = new double[n1*n2*nt];
         }    
+
+        for(int k=0;k<3;++k){
+        	for(int i=0;i<n1*n2*nt;++i){
+        		mx[k][i]      = 0;
+	            my[k][i]      = 0;
+	            phi[k][i]     = 0;
+	            phitmps[k][i] = 0;
+	            psi[k][i]     = 0;
+	            psitmps[k][i] = 0;
+        	}
+        }
 
         clock_t t;
         t = clock();
@@ -194,6 +213,7 @@ public:
         delete[] xitmp;
         delete[] phiT;
         delete[] phiTtmp;
+        delete[] karr;
     }
 
     /* 
@@ -471,7 +491,7 @@ public:
 
                     // double newrhovalue=cubic_solve(tau*Dtphi + tau*etalist[0]*Deltaphi - rho0[ind] + tau*betaval*rho1[ind]*(phi[1][ind]-phi[0][ind]), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
                     double newrhovalue = 0;
-                    	newrhovalue=cubic_solve(tau[0] * (Dtphi + etalist[0]*Deltaphi + xi[n]) - rho0[ind] + tau[0]*betaval*(convval2 - phi[0][ind]*convval), 0, -0.5/h*tau[0]*alphalist[0]*mvalue*mvalue);
+                    	newrhovalue=cubic_solve(tau[0] * (Dtphi + etalist[0]*Deltaphi + xi[n] + psi[0][ind]) - rho0[ind] + tau[0]*betaval*(convval2 - phi[0][ind]*convval), 0, -0.5/h*tau[0]*alphalist[0]*mvalue*mvalue);
                     rho0[n*n1*n2+i*n1+j]=fmax(0,newrhovalue);
                 }
             }
@@ -553,7 +573,7 @@ public:
                     if(n==nt){
                     	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n] + phiT[i*n1+j]*nt) - rho1[ind] + tau[1]*betaval*(phi[1][ind]*convval - convval2) + tau[1]*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
                     }else{
-                    	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n]) - rho1[ind] + tau[1]*betaval*(phi[1][ind]*convval - convval2) + tau[1]*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
+                    	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n] + psi[1][ind]) - rho1[ind] + tau[1]*betaval*(phi[1][ind]*convval - convval2) + tau[1]*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
                     }
                     
                     rho1[ind]=fmax(0,newrhovalue);
@@ -593,7 +613,7 @@ public:
 
                     calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[2]);
 
-                    double newrhovalue=cubic_solve(tau[2] * (Dtphi + etalist[2]*Deltaphi + xi[n]) - rho2[ind], 0, -0.5/h*tau[2]*alphalist[2]*mvalue*mvalue);
+                    double newrhovalue=cubic_solve(tau[2] * (Dtphi + etalist[2]*Deltaphi + xi[n] + psi[2][ind]) - rho2[ind], 0, -0.5/h*tau[2]*alphalist[2]*mvalue*mvalue);
                     rho2[ind]=fmax(0,newrhovalue);
                 }
             }
@@ -769,6 +789,22 @@ public:
         for(int i=0;i<n1*n2*nt;++i){
             phi[2][i] += sigma[2]*fftps->workspace[i];
         }
+    }
+
+    void update_psi(double* const rho[], const int num){
+    	double alpha = 0.4;
+
+for(int iter=0;iter<50;++iter)
+    	for(int n=0;n<nt;++n){
+    		for(int i=0;i<n2;++i){
+    			for(int j=0;j<n1;++j){
+    				int ind = n*n1*n2+i*n1+j;
+    				double F  = rho[num][ind] - exp(psi[num][ind] / karr[num]) - (psi[num][ind] - psitmps[num][ind]) / sigma[num];
+    				double DF = - 1.0/karr[num] * exp(psi[num][ind] / karr[num]) - 1.0 / sigma[num];
+    				psi[num][ind] -= alpha * F / DF;
+    			}
+    		}
+    	}
     }
 
     void update_xi(double* const rho[]){

@@ -108,8 +108,8 @@ public:
         this->sigma=new double[3];
 
         this->tau[0] = tau;
-        this->tau[1] = tau*0.7;
-        this->tau[2] = tau*0.7;
+        this->tau[1] = tau;
+        this->tau[2] = tau;
 
         this->sigma[0] = sigma;
         this->sigma[1] = sigma;
@@ -136,7 +136,7 @@ public:
         M0 = 0.5;
         // convN = n1/4;
         // convN = convN + (convN % 2) -1; // to make it odd
-        conv_r = 0.07;
+        conv_r = 0.05;
         convN  = 2*conv_r*n1+1;
         convN  = convN + (convN % 2) - 1; // to make it odd
         cout << "convN : " <<convN << endl;
@@ -447,6 +447,15 @@ public:
 
         for(int n=1;n<nt;++n){
 
+        	double vm = 0;
+
+        	for(int i=0;i<n1*n2;++i){
+        		vm = fmax(vm, rho0[i]);
+        		vm = fmax(vm, rho1[i]);
+        	}
+
+        	double betaval  = beta;
+
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
                     int ind = n*n1*n2+i*n1+j;
@@ -460,9 +469,9 @@ public:
                     double convval  =  calculate_convval(&rho1[n*n1*n2],i,j);
                     double convval2 = calculate_convval2(&rho1[n*n1*n2],&phi[1][n*n1*n2],i,j);
 
-                    // double newrhovalue=cubic_solve(tau*Dtphi + tau*etalist[0]*Deltaphi - rho0[ind] + tau*beta*rho1[ind]*(phi[1][ind]-phi[0][ind]), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
+                    // double newrhovalue=cubic_solve(tau*Dtphi + tau*etalist[0]*Deltaphi - rho0[ind] + tau*betaval*rho1[ind]*(phi[1][ind]-phi[0][ind]), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
                     double newrhovalue = 0;
-                    	newrhovalue=cubic_solve(tau[0] * (Dtphi + etalist[0]*Deltaphi + xi[n]) - rho0[ind] + tau[0]*beta*(convval2 - phi[0][ind]*convval), 0, -0.5/h*tau[0]*alphalist[0]*mvalue*mvalue);
+                    	newrhovalue=cubic_solve(tau[0] * (Dtphi + etalist[0]*Deltaphi + xi[n]) - rho0[ind] + tau[0]*betaval*(convval2 - phi[0][ind]*convval), 0, -0.5/h*tau[0]*alphalist[0]*mvalue*mvalue);
                     rho0[n*n1*n2+i*n1+j]=fmax(0,newrhovalue);
                 }
             }
@@ -497,10 +506,32 @@ public:
 
         fftps2d->perform_inverse_laplacian(0.1);
         for(int i=0;i<n1*n2;++i){
-            rho1[(nt-1)*n1*n2+i] = fmax(0, rho1[(nt-1)*n1*n2+i] - tau[1] * fftps2d->workspace[i]);
+            rho1[(nt-1)*n1*n2+i] =  fmax(0, rho1[(nt-1)*n1*n2+i] - tau[1] * fftps2d->workspace[i]);
         }
 
         for(int n=1;n<nt;++n){
+
+        	
+        	double vm = 0;
+
+        	for(int i=0;i<n1*n2;++i){
+        		vm = fmax(vm, rho1[i]);
+        	}
+
+        	double gammaval = gamma / vm;
+
+        	vm = 0;
+
+        	for(int i=0;i<n1*n2;++i){
+        		vm = fmax(vm, rho0[i]);
+        		vm = fmax(vm, rho1[i]);
+        	}
+
+        	double betaval  = beta  / vm;
+
+        	gammaval = gamma;
+        	betaval  = beta;
+
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -517,11 +548,12 @@ public:
                     double convval2 = calculate_convval2(&rho0[n*n1*n2],&phi[0][n*n1*n2],i,j);
 
                     // double newrhovalue=cubic_solve(tau[1]*Dtphi + tau[1]*etalist[1]*Deltaphi - rho1[ind] + tau[1]*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
+
                     double newrhovalue = 0;
                     if(n==nt){
-                    	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n] + phiT[i*n1+j]*nt) - rho1[ind] + tau[1]*beta*(phi[1][ind]*convval - convval2) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
+                    	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n] + phiT[i*n1+j]*nt) - rho1[ind] + tau[1]*betaval*(phi[1][ind]*convval - convval2) + tau[1]*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
                     }else{
-                    	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n]) - rho1[ind] + tau[1]*beta*(phi[1][ind]*convval - convval2) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
+                    	newrhovalue=cubic_solve(tau[1] * (Dtphi + etalist[1]*Deltaphi + xi[n]) - rho1[ind] + tau[1]*betaval*(phi[1][ind]*convval - convval2) + tau[1]*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
                     }
                     
                     rho1[ind]=fmax(0,newrhovalue);
@@ -747,7 +779,7 @@ public:
 	    			rho_sum += rho[k][n*n1*n2+i];
 	    		}
 	    	}
-	    	xi[n] += sigma[0] * 10 * (rho_sum/(n1*n2) - TOTAL_SUM);
+	    	xi[n] += sigma[0] * (rho_sum/(n1*n2) - TOTAL_SUM);
     	}
     }
 

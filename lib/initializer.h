@@ -50,7 +50,7 @@ public:
 
 	    for(int i=0;i<n1*n2;++i){
 	        // rho[i] *= (n1*n2)/sum;
-	        rho[i] /= vmax;
+	        rho[i] /= vmax * 1.5;
 	    }
 
 
@@ -88,7 +88,7 @@ public:
 
 	    for(int i=0;i<n1*n2;++i){
 	        // rho[i] *= (n1*n2)/sum*0.5;
-	        rho[i] /= vmax;
+	        rho[i] /= vmax*1.5;
 	    }
 
 	    for(int n=1;n<nt;++n){

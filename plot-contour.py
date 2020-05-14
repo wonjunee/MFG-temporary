@@ -133,9 +133,10 @@ def save_plot(visual=True, total=False):
     fig.subplots_adjust(bottom=0.1, top=1.0, right=1, left=0.1, wspace=0, hspace=0.2)
 
     xx = np.linspace(0,1,nt)
-    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
-    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
-    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/(n1*n2)
+    max0 = np.sum(rho0[0])
+    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/max0
+    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/max0
+    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/max0
 
     # ax.plot(xx,yy0,'.-',label="S")
     # ax.plot(xx,yy1,'.-',label="I")
@@ -191,19 +192,25 @@ def save_animation(SIR=True):
         
         cax1.set_clim(0, vmax)
         cax2.set_clim(0, vmax)
-        
+    
+        max0 = np.sum(rho0[0])
 
-        ax[0].set_title("{:.4f}".format(np.sum(rho0[n])/(n1*n2)))
-        ax[1].set_title("{:.4f}".format(np.sum(rho1[n])/(n1*n2)))
+        ax[0].set_title("{:.4f}".format(np.sum(rho0[n])/max0))
+        ax[1].set_title("{:.4f}".format(np.sum(rho1[n])/max0))
         
 
         if(SIR==True):
             cax3.set_array(np.flipud(rho2[n]))
             cax3.set_clim(0, vmax)
-            ax[2].set_title("{:.4f}".format(np.sum(rho2[n])/(n1*n2)))
+            ax[2].set_title("{:.4f}".format(np.sum(rho2[n])/max0))
+
+
+        ax[0].set_title("{:.4f}\n{:.4f}".format(np.sum(rho0[n])/max0,np.max(rho0[n])))
+        ax[1].set_title("{:.4f}\n{:.4f}".format(np.sum(rho1[n])/max0,np.max(rho1[n])))
+        ax[2].set_title("{:.4f}\n{:.4f}".format(np.sum(rho2[n])/max0,np.max(rho2[n])))
 
         # cax1.set_clim(0, 10)
-        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,n/(nt-1),np.sum(rho0[n]+rho1[n]+rho2[n])/(n1*n2)))
+        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,n/(nt-1),np.sum(rho0[n]+rho1[n]+rho2[n])/max0))
         return cax1, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.

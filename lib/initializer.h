@@ -80,7 +80,7 @@ public:
 
 	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = fmax(0.03-pow(x-0.5,2)-pow(y-0.5,2),0);
+	            rho[i*n1+j] = fmax(0.03-pow(x-0.6,2)-pow(y-0.6,2),0);
 	            // sum += rho[i*n1+j];
 	            vmax = fmax(vmax, rho[i*n1+j]);
 	        }

@@ -135,13 +135,13 @@ def save_plot(visual=True, total=False):
 
     fig, ax = plt.subplots(1,1,figsize=(5,3))
 
-    fig.subplots_adjust(bottom=0.1, top=1.0, right=1, left=0.1, wspace=0, hspace=0.2)
+    fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
     xx = np.linspace(0,1,nt)
     max0 = np.sum(rho0[0])
-    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)
-    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)
-    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)
+    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
+    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
+    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/(n1*n2)
 
     # ax.plot(xx,yy0,'.-',label="S")
     # ax.plot(xx,yy1,'.-',label="I")

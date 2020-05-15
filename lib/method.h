@@ -146,9 +146,10 @@ public:
         M0 = 0.5;
         // convN = n1/4; 
         // convN = convN + (convN % 2) -1; // to make it odd
-        conv_r = 0.1;
+        conv_r = 0.06;
         convN  = conv_r*n1;
         convN  = 2* convN + 1;
+        // convN  = 7;
         cout << "convN: " <<convN << endl;
 
         conv_sum = 0;
@@ -502,17 +503,6 @@ public:
 		double betaval  = beta;
 
 		for(int n=1;n<nt;++n){
-
-			if(n==1){
-				tauval *= 0.1;
-			}
-        	double vm = 0;
-
-        	for(int i=0;i<n1*n2;++i){
-        		vm = fmax(vm, rho0[i]);
-        		vm = fmax(vm, rho1[i]);
-        	}
-
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
                     int ind = n*n1*n2+i*n1+j;

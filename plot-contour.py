@@ -173,7 +173,7 @@ for i in range(N):
     n = int((nt-1) * tlist[i]);
     ax[i].imshow(rho0[n]+rho1[n]+rho2[n], cmap='inferno').set_clim(0, vmax)
     ax[i].set_axis_off()
-    ax[i].set_title(np.max(rho0[n]+rho1[n]+rho2[n]))
+    ax[i].set_title("{:.4f}".format(np.max(rho0[n]+rho1[n]+rho2[n])))
     
 plt.show()
 plt.close();

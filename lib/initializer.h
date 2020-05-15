@@ -88,7 +88,7 @@ public:
 
 	    for(int i=0;i<n1*n2;++i){
 	        // rho[i] *= (n1*n2)/sum*0.5;
-	        rho[i] /= vmax*3;
+	        rho[i] /= vmax*2;
 	    }
 
 	    for(int n=1;n<nt;++n){

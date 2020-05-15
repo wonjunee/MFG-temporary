@@ -80,7 +80,7 @@ public:
 		fftw_execute(planIn);
 
 		for(int i=0;i<n1*n2*nt;++i){
-			double val = (c+kernel[i]);
+			double val = (1+kernel[i]);
 			if(val==0){
 				workspace[i]=0;	
 			}else{

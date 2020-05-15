@@ -741,10 +741,10 @@ public:
                     double Deltarho = - n1*n1 * (-rho[0][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
                                       - n2*n2 * (-rho[0][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
 
-                    double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
+                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
 
                     // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
-                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[1][ind]*convval - etalist[0]*Deltarho); 
+                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - etalist[0]*Deltarho); 
                 }
             }
         }
@@ -781,10 +781,10 @@ public:
                     double Deltarho = - n1*n1 * (-rho[1][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
                                       - n2*n2 * (-rho[1][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
 
-                    double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
+                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
 
                     // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*rho[0][ind]*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
-                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*convval*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
+                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*convval*rho[0][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
                 }
             }
         }
@@ -989,7 +989,8 @@ public:
                     double Deltarho = - n1*n1 * (-rho[0][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
                                       - n2*n2 * (-rho[0][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
 
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
+                    // double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
+                    double convval = rho[1][ind];
 
                    	double val = (dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - etalist[0]*Deltarho); 
 
@@ -1013,7 +1014,8 @@ public:
                     double Deltarho = - n1*n1 * (-rho[1][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
                                       - n2*n2 * (-rho[1][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
 
-                    double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
+                    // double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
+                  double convval = rho[0][ind];
 
                     // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*rho[0][ind]*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
                     double val = (dtrho+nablamx+nablamy - beta*convval*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 

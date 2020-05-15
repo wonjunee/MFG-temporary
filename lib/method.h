@@ -523,9 +523,9 @@ public:
 
                     calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[0]);
 
-                    // double convval  =  calculate_convval(&rho1[n*n1*n2],i,j);
+                    double convval  =  calculate_convval(&rho1[n*n1*n2],i,j);
                     // double convval2 = calculate_convval2(&rho1[n*n1*n2],&phi[1][n*n1*n2],i,j);
-                    double convval3 = calculate_convval3(&rho1[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j);
+                    // double convval3 = calculate_convval3(&rho1[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j);
 
                     // double newrhovalue=cubic_solve(tau*Dtphi + tau*etalist[0]*Deltaphi - rho0[ind] + tau*betaval*rho1[ind]*(phi[1][ind]-phi[0][ind]), 0, -0.5/h*tau*alphalist[0]*mvalue*mvalue);
                         
@@ -533,7 +533,7 @@ public:
                                 (
                                     tauval * (Dtphi + etalist[0]*Deltaphi + xi[n] + karr[0]*rho1[ind] + karr[0]*rho2[ind]) 
                                     - rho0[ind] 
-                                    + tauval*betaval*convval3
+                                    + tauval*betaval*convval*(phi[1][ind] - phi[0][ind])
                                 );
                     double cval = -0.5/h*tauval/(tauval*karr[0]+1)*alphalist[0]*mvalue*mvalue;
                 	newrhovalue=cubic_solve(aval, 0, cval);
@@ -595,7 +595,8 @@ public:
 
                     calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[1]);
 
-                    double convval  = calculate_convval(&rho0[n*n1*n2],i,j);
+                    // double convval  = calculate_convval(&rho0[n*n1*n2],i,j);
+                    double convval3 = calculate_convval3(&rho0[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j);
 
                     double newrhovalue = 0;
                     // double newrhovalue=cubic_solve(tau[1]*Dtphi + tau[1]*etalist[1]*Deltaphi - rho1[ind] + tau[1]*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
@@ -603,14 +604,15 @@ public:
                     double aval=0,cval=0;
 
                     if(n==nt){
-                    	newrhovalue=cubic_solve(tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + phiT[i*n1+j]*nt + karr[0]*rho0[ind] + karr[0]*rho2[ind]) - rho1[ind] + tauval*betaval*(phi[1][ind] - phi[0][ind])*convval + tauval*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tauval*alphalist[1]*mvalue*mvalue);
+                    	// newrhovalue=cubic_solve(tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + phiT[i*n1+j]*nt + karr[0]*rho0[ind] + karr[0]*rho2[ind]) - rho1[ind] + tauval*betaval*(phi[1][ind] - phi[0][ind])*convval + tauval*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tauval*alphalist[1]*mvalue*mvalue);
                     }else{
                         aval = 1.0/(tauval*karr[1]+1) * 
                                 ( 
                                     tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + karr[0]*rho0[ind] + karr[0]*rho2[ind]) 
                                     - rho1[ind] 
-                                    + tauval*betaval*(phi[1][ind] - phi[0][ind])*convval 
-                                    + tauval*gammaval * (phi[2][ind] - phi[1][ind]) );
+                                    + tauval*betaval*convval3
+                                    + tauval*gammaval * (phi[2][ind] - phi[1][ind]) 
+                                );
                         cval = -0.5/h*tauval/(tauval*karr[1]+1)*alphalist[1]*mvalue*mvalue;
                     }
 

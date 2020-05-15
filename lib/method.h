@@ -146,7 +146,7 @@ public:
         M0 = 0.5;
         // convN = n1/4; 
         // convN = convN + (convN % 2) -1; // to make it odd
-        conv_r = 0.05;
+        conv_r = 0.1;
         convN  = conv_r*n1;
         convN  = 2* convN + 1;
         cout << "convN: " <<convN << endl;
@@ -739,10 +739,10 @@ public:
                     double Deltarho = - n1*n1 * (-rho[0][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
                                       - n2*n2 * (-rho[0][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
 
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
+                    double convval = calculate_convval(&rho[0][n*n1*n2],i,j);
 
                     // fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
-                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - etalist[0]*Deltarho); 
+                    fftps->workspace[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[1][ind]*convval - etalist[0]*Deltarho); 
                 }
             }
         }
@@ -958,10 +958,10 @@ public:
         for(int n=0;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
-                    double convval0 = calculate_convval(&rho[0][n*n1*n2],i,j);
-                    double convval1 = calculate_convval(&rho[1][n*n1*n2],i,j);
-                    term3 += beta * (rho[0][n*n1*n2+i*n1+j] * convval1 * phi[0][n*n1*n2+i*n1+j] - rho[1][n*n1*n2+i*n1+j] * convval0 * phi[1][n*n1*n2+i*n1+j]);
-                    // term3 += beta * (rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j] * phi[0][n*n1*n2+i*n1+j] - rho[1][n*n1*n2+i*n1+j] * rho[0][n*n1*n2+i*n1+j] * phi[1][n*n1*n2+i*n1+j]);
+                    // double convval0 = calculate_convval(&rho[0][n*n1*n2],i,j);
+                    // double convval1 = calculate_convval(&rho[1][n*n1*n2],i,j);
+                    // term3 += beta * (rho[0][n*n1*n2+i*n1+j] * convval1 * phi[0][n*n1*n2+i*n1+j] - rho[1][n*n1*n2+i*n1+j] * convval0 * phi[1][n*n1*n2+i*n1+j]);
+                    term3 += beta * rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j] * (phi[0][n*n1*n2+i*n1+j] - phi[1][n*n1*n2+i*n1+j]);
                 }
             }
         }

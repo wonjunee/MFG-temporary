@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     // coefficients for the energy functions
 
     double c0=0.001;
-    double c1=0.5;
+    double c1=0.1;
     double c2=0.01;
 
     // coefficients for velocities
@@ -52,8 +52,8 @@ int main(int argc, char **argv)
     double alpha3 = 1.0;
 
     // coefficients for SIR model
-    double beta  = 0.01;
-    double gamma = 0.1;
+    double beta  = 0.5;
+    double gamma = 0.2;
 
     double* rho[3];
 
@@ -78,6 +78,7 @@ int main(int argc, char **argv)
     init.intialize_rho0(rho[0]);
     init.intialize_rho1(rho[1]);
     init.intialize_rho2(rho[2]);
+    init.renormalize_all(rho);
     // init.intialize_f(f);
     for(int k=0;k<3;++k) for(int i=0;i<n1*n2;++i) f_arr[k][i] = 0;
 

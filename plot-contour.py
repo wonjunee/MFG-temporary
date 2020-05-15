@@ -96,7 +96,7 @@ tlist = [0,0.25,0.5,0.75,1.0]
 
 
 
-def save_plot_contour(visual=True, SIR=True):
+def save_plot_contour(visual=True, SIR=True, title_type=0):
     fig, ax = plt.subplots(3,N,figsize=(9,6))
 
     fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
@@ -114,12 +114,17 @@ def save_plot_contour(visual=True, SIR=True):
         ax[1,i].set_axis_off()
         ax[2,i].set_axis_off()
 
-        ax[0,i].set_title("t = {:.2f}\nsum = {:.3f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
-        ax[1,i].set_title("sum = {:.3f}".format(np.sum(rho1[n])/(n1*n2)))
-        ax[2,i].set_title("sum = {:.3f}".format(np.sum(rho2[n])/(n1*n2)))
+        if title_type == 0:
+            ax[0,i].set_title("t = {:.2f}\nsum = {:.3f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
+            ax[1,i].set_title("sum = {:.3f}".format(np.sum(rho1[n])/(n1*n2)))
+            ax[2,i].set_title("sum = {:.3f}".format(np.sum(rho2[n])/(n1*n2)))
+            plt.savefig("figures/SIR-with-mass.png")
+        elif title_type == 1:
+            ax[0,i].set_title("t = {:.2f}".format(1.0*n/(nt-1)))
+            plt.savefig("figures/SIR-no-mass.png")
 
 
-    plt.savefig("figures/SIR.png")
+    
     if(visual==True):
         plt.show()
     plt.close();
@@ -134,9 +139,9 @@ def save_plot(visual=True, total=False):
 
     xx = np.linspace(0,1,nt)
     max0 = np.sum(rho0[0])
-    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/max0
-    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/max0
-    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/max0
+    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)
+    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)
+    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)
 
     # ax.plot(xx,yy0,'.-',label="S")
     # ax.plot(xx,yy1,'.-',label="I")
@@ -157,7 +162,26 @@ def save_plot(visual=True, total=False):
         plt.show()
     plt.close()
 
-save_plot_contour(visual=True, SIR=True)
+
+fig, ax = plt.subplots(1,N,figsize=(9,6))
+
+fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
+
+vmax = np.max(rho0+rho1+rho2)
+
+for i in range(N):
+    n = int((nt-1) * tlist[i]);
+    ax[i].imshow(rho0[n]+rho1[n]+rho2[n], cmap='inferno').set_clim(0, vmax)
+    ax[i].set_axis_off()
+    ax[i].set_title(np.max(rho0[n]+rho1[n]+rho2[n]))
+    
+plt.show()
+plt.close();
+
+
+
+save_plot_contour(visual=True, SIR=True, title_type = 0)
+save_plot_contour(visual=False, SIR=True, title_type = 1)
 save_plot(visual=True,  total=True)
 save_plot(visual=False,  total=False)
 
@@ -210,7 +234,7 @@ def save_animation(SIR=True):
         ax[2].set_title("{:.4f}\n{:.4f}".format(np.sum(rho2[n])/max0,np.max(rho2[n])))
 
         # cax1.set_clim(0, 10)
-        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,n/(nt-1),np.sum(rho0[n]+rho1[n]+rho2[n])/max0))
+        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,n/(nt-1),np.max(rho0[n]+rho1[n]+rho2[n])))
         return cax1, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.

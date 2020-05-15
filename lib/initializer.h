@@ -80,7 +80,7 @@ public:
 
 	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = fmax(0.03-pow(x-0.6,2)-pow(y-0.6,2),0);
+	            rho[i*n1+j] = fmax(0.03-pow(x-0.5,2)-pow(y-0.5,2),0);
 	            // sum += rho[i*n1+j];
 	            vmax = fmax(vmax, rho[i*n1+j]);
 	        }
@@ -88,7 +88,7 @@ public:
 
 	    for(int i=0;i<n1*n2;++i){
 	        // rho[i] *= (n1*n2)/sum*0.5;
-	        rho[i] /= vmax*1.5;
+	        rho[i] /= vmax*3;
 	    }
 
 	    for(int n=1;n<nt;++n){
@@ -131,6 +131,34 @@ public:
 	    		}
 	    	}
 	    }
+	}
+
+
+	void renormalize_all(double* rho[]){
+		{
+			double maxval = 0;
+			for(int i=0;i<n1*n2;++i){
+				double s = 0;
+				for(int k=0;k<3;++k){
+					s += rho[k][k];
+				}
+				maxval = fmax(maxval, s);
+			}
+			maxval = fmax(1,maxval);
+			for(int k=0;k<3;++k){
+				for(int i=0;i<n1*n2;++i){
+					rho[k][i] /= maxval*1.5;
+				}
+			}
+		}
+
+		for(int n=1;n<nt;++n){
+			for(int k=0;k<3;++k){
+				for(int i=0;i<n1*n2;++i){
+					rho[k][n*n1*n2+i] = rho[k][i];
+				}
+			}
+		}
 	}
 };
 

@@ -52,20 +52,16 @@ int main(int argc, char **argv)
     double alpha3 = 1.0;
 
     // coefficients for SIR model
-    double beta  = 0.5;
-    double gamma = 0.5;
+    double beta  = 0.9;
+    double gamma = 0.2;
 
     double* rho[3];
 
-    for(int i=0;i<3;++i){
-        rho[i] = new double[n1*n2*nt];
-    }
+    for(int i=0;i<3;++i) rho[i] = new double[n1*n2*nt];
 
     double** f_arr = new double*[3]; // f is an obstacle
 
-    for(int k=0;k<3;++k){
-        f_arr[k] = new double[n1*n2];
-    }
+    for(int k=0;k<3;++k) f_arr[k] = new double[n1*n2];
 
     double Clist[] = {eta, eta, eta};  
 
@@ -78,7 +74,7 @@ int main(int argc, char **argv)
     init.intialize_rho0(rho[0]);
     init.intialize_rho1(rho[1]);
     init.intialize_rho2(rho[2]);
-    init.renormalize_all(rho);
+    // init.renormalize_all(rho);
     // init.intialize_f(f);
     for(int k=0;k<3;++k) for(int i=0;i<n1*n2;++i) f_arr[k][i] = 0;
 
@@ -106,10 +102,7 @@ int main(int argc, char **argv)
     cout<<"beta          : "<<scientific<<method.beta<<endl;
     cout<<"gamma         : "<<scientific<<method.gamma<<endl;
 
-
     create_csv_file_for_parameters(n1,n2,nt,c0,c1,c2,method.beta,method.gamma);
-
-
 
     cout<<"\nXXX Starting Iterations XXX"<<endl;
 

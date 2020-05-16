@@ -206,7 +206,7 @@ def save_animation(SIR=True):
         cax3 = ax[2].imshow(rho2[0], cmap='inferno')
         ax[2].set_axis_off()
     
-    vmax = np.max(rho0)*0.6
+    vmax = np.max(rho1)
 
     # animation function.  This is called sequentially
     def animate(n):

@@ -50,7 +50,7 @@ public:
 
 	    for(int i=0;i<n1*n2;++i){
 	        // rho[i] *= (n1*n2)/sum;
-	        rho[i] /= vmax * 1.5;
+	        rho[i] /= vmax * 2;
 	    }
 
 
@@ -80,7 +80,7 @@ public:
 
 	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = fmax(0.03-pow(x-0.6,2)-pow(y-0.6,2),0);
+	            rho[i*n1+j] = fmax(0.03-pow(x-0.5,2)-pow(y-0.5,2),0);
 	            // sum += rho[i*n1+j];
 	            vmax = fmax(vmax, rho[i*n1+j]);
 	        }
@@ -88,7 +88,7 @@ public:
 
 	    for(int i=0;i<n1*n2;++i){
 	        // rho[i] *= (n1*n2)/sum*0.5;
-	        rho[i] /= vmax*2;
+	        rho[i] /= vmax * 3;
 	    }
 
 	    for(int n=1;n<nt;++n){
@@ -102,7 +102,7 @@ public:
 
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
-	            rho[i*n1+j] = 0;
+	            rho[i*n1+j] = 1e-4;
 	        }
 	    }
 

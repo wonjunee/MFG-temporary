@@ -42,7 +42,7 @@ int main(int argc, char **argv)
     // coefficients for the energy functions
 
     double c0=0.001;
-    double c1=0.05;
+    double c1=1.0;
     double c2=0.01;
 
     // coefficients for velocities
@@ -77,6 +77,15 @@ int main(int argc, char **argv)
     // init.renormalize_all(rho);
     // init.intialize_f(f);
     for(int k=0;k<3;++k) for(int i=0;i<n1*n2;++i) f_arr[k][i] = 0;
+
+    // for(int i=0;i<n2;++i){
+    //     for(int j=0;j<n1;++j){
+    //         double x = (j+0.5)/n1;
+    //         double y = (i+0.5)/n2;
+
+    //         f_arr[1][i*n1+j] = 10 * ((x-0.9)*(x-0.9) + (y-0.9)*(y-0.9));
+    //     }
+    // }
 
     // initialize the method
     Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist);

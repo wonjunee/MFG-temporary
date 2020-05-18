@@ -243,8 +243,9 @@ public:
 
 	void perform_inverse_laplacian_phiT(const double c, const double* phiT){
 
-		fftw_execute(planIn);
+		for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
 
+		fftw_execute(planIn);
 
 		for(int i=0;i<n1*n2;++i){
 			double val = kernel[i];

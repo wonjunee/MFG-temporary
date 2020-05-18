@@ -231,7 +231,7 @@ public:
     */
 
     double calculate_K_xy(double x, double xx, double y, double yy) const{
-        double var = 0.1;
+        double var = 0.01;
         return 1.0/(var*sqrt(2*M_PI))*exp(- ((x-xx)*(x-xx)+(y-yy)*(y-yy))/(2*(var*var)));
     }
 

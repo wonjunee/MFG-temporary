@@ -17,10 +17,10 @@ void create_bin_file(const double* A, int size, string filename){
     out.close();
 }
 
-void create_csv_file_for_parameters(int n1,int n2,int nt, double c0, double c1, double c2, double beta, double gamma){
+void create_csv_file_for_parameters(int n1,int n2,int nt, double c0, double c1, double c2, double beta, double gamma, double var){
     ofstream outfile;
     outfile.open("./data/parameters.csv");
-    outfile<<n1<<","<<n2<<","<<nt<<","<<c0<<","<<c1<<","<<c2<<","<<beta<<","<<gamma;
+    outfile<<n1<<","<<n2<<","<<nt<<","<<c0<<","<<c1<<","<<c2<<","<<beta<<","<<gamma<<","<<var;
     outfile.close();
 }
 

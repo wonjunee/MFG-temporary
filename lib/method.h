@@ -68,7 +68,7 @@ public:
 
     double beta;
     double gamma;
-
+    double var;
 
     // function pointers for terminal functions
     // double (*E0)(double);
@@ -100,7 +100,7 @@ public:
            double tau, double sigma, int max_iteration, double tolerance, 
            double c0, double c1, double c2, 
            double alpha1, double alpha2, double alpha3,
-           double* etalist){
+           double* etalist, double var){
         this->n1=n1;
         this->n2=n2;
         this->nt=nt;
@@ -127,6 +127,7 @@ public:
         this->c2=c2;
 
         this->etalist = etalist; // this contains the eta values for viscosity terms
+        this->var     = var;
 
         alphalist = new double[3];
         alphalist[0] = alpha1;
@@ -231,7 +232,6 @@ public:
     */
 
     double calculate_K_xy(double x, double xx, double y, double yy) const{
-        double var = 0.01;
         return 1.0/(var*sqrt(2*M_PI))*exp(- ((x-xx)*(x-xx)+(y-yy)*(y-yy))/(2*(var*var)));
     }
 

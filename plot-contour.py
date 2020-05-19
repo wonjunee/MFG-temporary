@@ -22,6 +22,7 @@ with open("{}/parameters.csv".format(directory)) as F:
         c2 = float(i[5])
         beta = float(i[6])
         gamma = float(i[7])
+        var   = float(i[8])
 
 #--------------------------------------------------
 #   Getting Rho Data
@@ -234,7 +235,7 @@ def save_animation(SIR=True):
         ax[2].set_title("{:.4f}\n{:.4f}".format(np.sum(rho2[n])/max0,np.max(rho2[n])))
 
         # cax1.set_clim(0, 10)
-        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,n/(nt-1),np.max(rho0[n]+rho1[n]+rho2[n])))
+        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}, var={:.3}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,var,n/(nt-1),np.max(rho0[n]+rho1[n]+rho2[n])))
         return cax1, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.

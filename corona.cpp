@@ -48,12 +48,14 @@ int main(int argc, char **argv)
     // coefficients for velocities
 
     double alpha1 = 1.0;
-    double alpha2 = 1.0;
+    double alpha2 = 2.0;
     double alpha3 = 1.0;
 
     // coefficients for SIR model
     double beta  = 0.9;
     double gamma = 0.2;
+
+    double var = 0.1;
 
     double* rho[3];
 
@@ -88,7 +90,7 @@ int main(int argc, char **argv)
     // }
 
     // initialize the method
-    Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist);
+    Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist, var);
 
     // coefficients for SIR system
     method.h = 1;
@@ -110,8 +112,9 @@ int main(int argc, char **argv)
     cout<<"eta           : "<<scientific<<eta<<endl;
     cout<<"beta          : "<<scientific<<method.beta<<endl;
     cout<<"gamma         : "<<scientific<<method.gamma<<endl;
+    cout<<"var           : "<<scientific<<method.var<<endl;
 
-    create_csv_file_for_parameters(n1,n2,nt,c0,c1,c2,method.beta,method.gamma);
+    create_csv_file_for_parameters(n1,n2,nt,c0,c1,c2,method.beta,method.gamma,var);
 
     cout<<"\nXXX Starting Iterations XXX"<<endl;
 

@@ -69,6 +69,7 @@ public:
     double beta;
     double gamma;
     double var;
+    double var_gamma;
 
     // function pointers for terminal functions
     // double (*E0)(double);
@@ -116,11 +117,11 @@ public:
 
         this->tau[0] = tau;
         this->tau[1] = tau;
-        this->tau[2] = tau*0.5;
+        this->tau[2] = 0.1;
 
         this->sigma[0] = sigma;
         this->sigma[1] = sigma;
-        this->sigma[2] = sigma;
+        this->sigma[2] = 0.2;
 
         this->c0=c0;
         this->c1=c1;
@@ -150,27 +151,11 @@ public:
         // convN = convN + (convN % 2) -1; // to make it odd
         conv_r = 0.2;
         convN  = conv_r*n1;
-        convN  = 2* convN + 1;
+        convN  = 2 * convN + 1;
         // convN  = 7;
         cout << "convN: " <<convN << endl;
 
-        conv_sum = 0;
-        int i = n2/2;
-        int j = n1/2;
-        double xx = (j+0.5)/n1;
-        double yy = (i+0.5)/n2;
-        for(int i1=i-convN/2;i1<i+convN/2+1;++i1){
-            for(int j1=j-convN/2;j1<j+convN/2+1;++j1){
-                
-                double x=(j1+0.5)/n1;
-                double y=(i1+0.5)/n2;        
-
-                if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
-	                double eval = calculate_K_xy(x,xx,y,yy);
-	                conv_sum += eval;
-	            }
-            }
-        }
+        var_gamma = 0.05;
 
         for(int i=0;i<3;++i){
             mx[i]      = new double[n1*n2*nt];
@@ -231,13 +216,14 @@ public:
         Convolution functions
     */
 
-    double calculate_K_xy(double x, double xx, double y, double yy) const{
+    double calculate_K_xy(double x, double xx, double y, double yy, double var) const{
         return 1.0/(var*sqrt(2*M_PI))*exp(- ((x-xx)*(x-xx)+(y-yy)*(y-yy))/(2*(var*var)));
     }
 
 
-    double calculate_convval(const double* rho, const int i, const int j) const{
+    double calculate_convval(const double* rho, const int i, const int j, const double var) const{
         double convval = 0;
+        double conv_sum= 0;
 
         double xx=(j+0.5)/n1;
         double yy=(i+0.5)/n2;
@@ -249,12 +235,13 @@ public:
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
                 if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
-	                double eval = calculate_K_xy(x,xx,y,yy);
+	                double eval = calculate_K_xy(x,xx,y,yy,var);
 
 	                int ii = fmin(n2-1, fmax(0, i1));
 	                int jj = fmin(n1-1, fmax(0, j1));
 
 	                convval += eval * rho[ii*n1+jj];
+                    conv_sum+= eval;
 	            }
             }
         }
@@ -263,8 +250,9 @@ public:
         return convval;
     }
 
-    double calculate_convval2(const double* rho, const double* phi, const int i, const int j) const{
+    double calculate_convval2(const double* rho, const double* phi, const int i, const int j, const double var) const{
         double convval = 0;
+        double conv_sum= 0;
 
         double xx=(j+0.5)/n1;
         double yy=(i+0.5)/n2;
@@ -275,12 +263,13 @@ public:
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
                 if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
-	                double eval = calculate_K_xy(x,xx,y,yy) ;
+	                double eval = calculate_K_xy(x,xx,y,yy,var);
 
 	                int ii = fmin(n2-1, fmax(0, i1));
 	                int jj = fmin(n1-1, fmax(0, j1));
 
 	                convval += eval * rho[ii*n1+jj] * phi[ii*n1+jj];
+                    conv_sum+= eval;
                 }
                 
             }
@@ -289,8 +278,9 @@ public:
         return convval;
     }
 
-    double calculate_convval3(const double* rho, const double* phi0, const double* phi1, const int i, const int j) const{
+    double calculate_convval3(const double* rho, const double* phi0, const double* phi1, const int i, const int j, const double var) const{
         double convval = 0;
+        double conv_sum= 0;
 
         double xx=(j+0.5)/n1;
         double yy=(i+0.5)/n2;
@@ -301,12 +291,13 @@ public:
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
                 if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
-                    double eval = calculate_K_xy(x,xx,y,yy) ;
+                    double eval = calculate_K_xy(x,xx,y,yy,var);
 
                     int ii = fmin(n2-1, fmax(0, i1));
                     int jj = fmin(n1-1, fmax(0, j1));
 
                     convval += eval * rho[ii*n1+jj] * (phi1[ii*n1+jj] - phi0[ii*n1+jj]);
+                    conv_sum+= eval;
                 }
                 
             }
@@ -315,7 +306,7 @@ public:
         return convval;
     }
 
-    double calculate_convval4(const double* phi0, const double* phi1, const int i, const int j) const{
+    double calculate_convval4(const double* phi0, const double* phi1, const int i, const int j, const double var) const{
         double convval = 0;
 
         double xx=(j+0.5)/n1;
@@ -327,7 +318,7 @@ public:
                 double x=(j1+0.5)/n1;
                 double y=(i1+0.5)/n2;        
                 if((x-xx)*(x-xx) + (y-yy)*(y-yy) <= conv_r*conv_r){
-                    double eval = calculate_K_xy(x,xx,y,yy) ;
+                    double eval = calculate_K_xy(x,xx,y,yy,var);
 
                     int ii = fmin(n2-1, fmax(0, i1));
                     int jj = fmin(n1-1, fmax(0, j1));
@@ -546,7 +537,7 @@ public:
 
                     calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[0]);
 
-                    double convval  =  calculate_convval(&rho1[n*n1*n2],i,j);
+                    double convval  =  calculate_convval(&rho1[n*n1*n2],i,j,var);
                     // double convval2 = calculate_convval2(&rho1[n*n1*n2],&phi[1][n*n1*n2],i,j);
                     // double convval3 = calculate_convval3(&rho1[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j);
 
@@ -612,8 +603,8 @@ public:
                     calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[1]);
 
                     // double convval  = calculate_convval(&rho0[n*n1*n2],i,j);
-                    double convval3 = calculate_convval3(&rho0[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j);
-                    double convval4 = calculate_convval4(&phi[1][n*n1*n2],&phi[2][n*n1*n2],i,j);
+                    double convval3 = calculate_convval3(&rho0[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j,var);
+                    double convval4 = calculate_convval4(&phi[1][n*n1*n2],&phi[2][n*n1*n2],i,j,var_gamma);
 
                     double newrhovalue = 0;
                     // double newrhovalue=cubic_solve(tau[1]*Dtphi + tau[1]*etalist[1]*Deltaphi - rho1[ind] + tau[1]*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
@@ -632,6 +623,15 @@ public:
                     //             );
                     //     cval = -0.5/h*tauval/(tauval*karr[1]+1)*alphalist[1]*mvalue*mvalue;
                     // }
+
+                        // aval = 1.0/(tauval*karr[1]+1) * 
+                        //         ( 
+                        //             tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + karr[0]*rho0[ind] + karr[0]*rho2[ind]) 
+                        //             - rho1[ind] 
+                        //             + tauval*betaval*convval3
+                        //             + tauval*gammaval * (phi[2][ind] - phi[1][ind]) 
+                        //         );
+                        // cval = -0.5/h*tauval/(tauval*karr[1]+1)*alphalist[1]*mvalue*mvalue;
 
                         aval = 1.0/(tauval*karr[1]+1) * 
                                 ( 
@@ -728,140 +728,6 @@ public:
         return dtrho;
     }
 
-    double update_phi0(double* const rho[], const double* mx, const double* my, const double* f){
-
-        // Update 0 < t < 1
-
-        // for(int i=0;i<n2;++i){
-        // 	for(int j=0;j<n1;++j){
-        // 		int ind = (nt-1)*n1*n2+i*n1+j;
-        // 		double val = c0 * (rho[0][ind] - rho[0][i*n1+j]);
-        // 		phi[0][ind] += sigma[0]/nt * (val - phi[0][ind]);
-        // 	}
-        // }
-
-        for(int n=0;n<nt;++n){  
-            for(int i=0;i<n2;++i){
-                for(int j=0;j<n1;++j){
-                    double dtrho = calculate_dtrho(rho[0], n, i, j);
-
-                    double nablamx=calculate_grad_mx(mx,n,i,j);
-                    double nablamy=calculate_grad_my(my,n,i,j);
-
-                    int ind = n*n1*n2+i*n1+j;
-
-                    double Deltarho = - n1*n1 * (-rho[0][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
-                                      - n2*n2 * (-rho[0][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[0][n*n1*n2+i*n1+j]-rho[0][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
-
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
-
-                    // fftps->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
-                    fftps[0]->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*convval - etalist[0]*Deltarho); 
-                }
-            }
-        }
-
-        double error = 0;
-        fftps[0]->perform_inverse_laplacian(beta,etalist[0]);
-        for(int i=0;i<n1*n2*nt;++i){
-            phi[0][i] += sigma[0]*fftps[0]->workspace[i];
-            error += fftps[0]->u[i]*fftps[0]->workspace[i];
-        }
-        return error/(1.0*n1*n2*nt);
-    }
-
-    double update_phi1(double* const rho[], const double* mx, const double* my, const double* f){
-
-        // Update 0 < t < 1
-
-        // for(int i=0;i<n2;++i){
-        // 	for(int j=0;j<n1;++j){
-        // 		int ind = (nt-1)*n1*n2+i*n1+j;
-        // 		double val = c1 * rho[1][ind];
-        // 		phi[1][ind] += sigma[1]/nt * (val - phi[1][ind]);
-        // 	}
-        // }
-
-        for(int n=0;n<nt;++n){  
-            for(int i=0;i<n2;++i){
-                for(int j=0;j<n1;++j){
-                    double dtrho = calculate_dtrho(rho[1], n, i, j);
-
-
-                    double nablamx=calculate_grad_mx(mx,n,i,j);
-                    double nablamy=calculate_grad_my(my,n,i,j);
-
-                    int ind = n*n1*n2+i*n1+j;
-
-                    double Deltarho = - n1*n1 * (-rho[1][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
-                                      - n2*n2 * (-rho[1][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[1][n*n1*n2+i*n1+j]-rho[1][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
-
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
-
-                    // fftps->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*rho[0][ind]*rho[1][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
-                    // fftps->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*convval*rho[0][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho); 
-                    fftps[1]->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy - beta*convval*rho[0][ind] + gamma*convval - etalist[1]*Deltarho); 
-                }
-            }
-        }
-
-        double error = 0;
-        fftps[1]->perform_inverse_laplacian(beta,etalist[1]);
-        for(int i=0;i<n1*n2*nt;++i){
-            phi[1][i] += sigma[1]*fftps[1]->workspace[i];
-            error += fftps[1]->u[i]*fftps[1]->workspace[i];
-        }
-        return error/(1.0*n1*n2*nt);
-    }
-
-    double update_phi2(double* const rho[], const double* mx, const double* my, const double* f){
-
-        // Update 0 < t < 1
-
-        // for(int i=0;i<n2;++i){
-        // 	for(int j=0;j<n1;++j){
-        // 		int ind = (nt-1)*n1*n2+i*n1+j;
-
-        // 		double val = 0;
-        // 		if(rho[2][ind] > 0){
-        // 			val = c2*log(rho[2][ind]);
-        // 		}
-        // 		phi[2][ind] += sigma[2]/nt * (val - phi[2][ind]);
-        // 	}
-        // }    	
-
-        // Update 0 < t < 1
-
-        for(int n=0;n<nt;++n){  
-            for(int i=0;i<n2;++i){
-                for(int j=0;j<n1;++j){
-                    double dtrho = calculate_dtrho(rho[2], n, i, j);
-
-                    double nablamx=calculate_grad_mx(mx,n,i,j);
-                    double nablamy=calculate_grad_my(my,n,i,j);
-
-                    int ind = n*n1*n2+i*n1+j;
-
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
-
-                    double Deltarho = - n1*n1 * (-rho[2][n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[2][n*n1*n2+i*n1+j]-rho[2][n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
-                                      - n2*n2 * (-rho[2][n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[2][n*n1*n2+i*n1+j]-rho[2][n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
-
-                    // fftps[2]->u[n*n1*n2+i*n1+j]=-(dtrho + nablamx + nablamy - gamma*convval - etalist[2]*Deltarho); 
-                    fftps[2]->u[n*n1*n2+i*n1+j]=-(dtrho + nablamx + nablamy - gamma*rho[1][ind] - etalist[2]*Deltarho); 
-                }
-            }
-        }
-
-        double error = 0;
-        fftps[2]->perform_inverse_laplacian(gamma,etalist[2]);
-        for(int i=0;i<n1*n2*nt;++i){
-            phi[2][i] += sigma[2]*fftps[2]->workspace[i];
-            error     += fftps[2]->u[i]*fftps[2]->workspace[i];
-        }
-        return error/(1.0*n1*n2*nt);
-    }
-
     double calculate_Delta_value(const double* rho, const int n, const int i, const int j){
         return - n1*n1 * (-rho[n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[n*n1*n2+i*n1+j]-rho[n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
                - n2*n2 * (-rho[n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[n*n1*n2+i*n1+j]-rho[n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
@@ -891,14 +757,17 @@ public:
                     double Deltarho1 = calculate_Delta_value(rho[1],n,i,j);
                     double Deltarho2 = calculate_Delta_value(rho[2],n,i,j);
 
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j);
+                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j,var);
+                    double convval_gamma = calculate_convval(&rho[1][n*n1*n2],i,j,var_gamma);
 
                     // fftps->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
                     fftps[0]->u[ind]  = - (dtrho0 + nablamx0 + nablamy0 + beta*rho[0][ind]*convval - etalist[0]*Deltarho0); 
 
-                    fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*convval*rho[0][ind] + gamma*convval - etalist[1]*Deltarho1);
+                    fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*convval*rho[0][ind] + gamma*convval_gamma - etalist[1]*Deltarho1);
+                    // fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*convval*rho[0][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho1);
 
-                    fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*convval - etalist[2]*Deltarho2); 
+                    fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*convval_gamma - etalist[2]*Deltarho2); 
+                    // fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*rho[1][ind] - etalist[2]*Deltarho2); 
                 }
             }
         }
@@ -1100,6 +969,8 @@ public:
         double beta_1 = 1.5;
         double beta_2 = 0.9;
 
+        double sanity_value_previous = 100;
+
         for(iterPDHG=0; iterPDHG<max_iteration; ++iterPDHG){
 
             // get the data before updates
@@ -1115,10 +986,11 @@ public:
 
             update_rho0(rho[0],rhotmps[1],rhotmps[2],mx[0],my[0],f[0]);
             update_rho1(rhotmps[0],rho[1],rhotmps[2],mx[1],my[1],f[1]);
-            update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);
 
-            
-
+            if(iterPDHG > 12){
+                update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);    
+            }
+        
             /*
                     UPDATE PHI
             */
@@ -1131,6 +1003,25 @@ public:
             // double error2 = update_phi2(rho,mx[2],my[2],f[2]); 
 
             sanity_value  = update_phi_all(rho,mx,my,f);
+
+            if(iterPDHG > 12)
+            {
+                if(sanity_value > sanity_value_previous){           
+                    for(int k=0;k<3;++k){
+                        tau[k]   *= 0.99;
+                        sigma[k] *= 0.99;
+                    }
+                }
+
+                if(sanity_value < 0.9 * sanity_value_previous){           
+                    for(int k=0;k<2;++k){
+                        tau[k]   *= 1.01;
+                        sigma[k] *= 1.01;
+                    }
+                }
+            }
+            
+            sanity_value_previous = sanity_value;
 
             for(int k=0;k<3;++k){
                 for(int i=0;i<n1*n2*nt;++i){
@@ -1186,6 +1077,8 @@ public:
 
             // sanity_value = error;
 
+
+
             if((iterPDHG+1)%skip==0){
 
                 display_log(iterPDHG,  tau[0],  sigma[0],  energy,  dual,  error,  dual_gap, sanity_value);
@@ -1193,11 +1086,6 @@ public:
                 create_csv_file(rho[0],"./data/rho0.csv",n1,n2,nt);
                 create_csv_file(rho[1],"./data/rho1.csv",n1,n2,nt);
                 create_csv_file(rho[2],"./data/rho2.csv",n1,n2,nt);
-
-				for(int k=0;k<3;++k){
-	            	tau[k]   *= 0.99;
-	            	sigma[k] *= 0.99;
-	            }
             }
             if((iterPDHG>20 ) && (fabs(dual_gap)<tolerance)) break;
 

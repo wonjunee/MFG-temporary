@@ -53,7 +53,7 @@ int main(int argc, char **argv)
 
     // coefficients for SIR model
     double beta  = 0.9;
-    double gamma = 0.2;
+    double gamma = 0.05;
 
     double var = 0.1;
 

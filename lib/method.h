@@ -155,7 +155,7 @@ public:
         // convN  = 7;
         cout << "convN: " <<convN << endl;
 
-        var_gamma = 0.05;
+        var_gamma = 0.05; // DON'T TOUCH THIS. This one is for regularization.
 
         for(int i=0;i<3;++i){
             mx[i]      = new double[n1*n2*nt];
@@ -308,6 +308,7 @@ public:
 
     double calculate_convval4(const double* phi0, const double* phi1, const int i, const int j, const double var) const{
         double convval = 0;
+        double conv_sum = 0;
 
         double xx=(j+0.5)/n1;
         double yy=(i+0.5)/n2;
@@ -324,6 +325,7 @@ public:
                     int jj = fmin(n1-1, fmax(0, j1));
 
                     convval += eval * (phi1[ii*n1+jj] - phi0[ii*n1+jj]);
+                    conv_sum+= eval;
                 }
                 
             }

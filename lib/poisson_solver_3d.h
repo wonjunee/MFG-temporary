@@ -36,10 +36,10 @@ public:
 		// planOut = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT01,FFTW_REDFT01, FFTW_MEASURE);
 
 		planIn=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace,
-                                 FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10,
+                                 FFTW_RODFT10, FFTW_REDFT10, FFTW_REDFT10,
                                  FFTW_MEASURE);
     	planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace,
-                                  FFTW_REDFT01, FFTW_REDFT01, FFTW_REDFT01,
+                                  FFTW_RODFT01, FFTW_REDFT01, FFTW_REDFT01,
                                   FFTW_MEASURE);
 
 		u=new double[n1*n2*nt];
@@ -65,7 +65,8 @@ public:
 		        for(int j=0;j<n1;j++){
 		            double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
 		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));
+		        	// double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
+		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
 		            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
 		            // double negativeLaplacian= xpart + ypart + eta * eta * ( xpart*xpart + ypart*ypart ) + tpart;
 		            double negativeLaplacian= eta * eta * ( xpart*xpart + ypart*ypart ) + tpart;

@@ -121,7 +121,7 @@ public:
 
         this->sigma[0] = sigma;
         this->sigma[1] = sigma*0.6;
-        this->sigma[2] = sigma*0.3;
+        this->sigma[2] = sigma*0.5;
 
         this->c0=c0;
         this->c1=c1;
@@ -136,9 +136,9 @@ public:
         alphalist[2] = alpha3;
 
         karr = new double[3];
-        karr[0] = 5e-2;
-        karr[1] = 5e-2;
-        karr[2] = 5e-2;
+        karr[0] = 1e-2;
+        karr[1] = 1e-2;
+        karr[2] = 1e-2;
 
         xi    = new double[nt];
         xitmp = new double[nt];
@@ -155,7 +155,7 @@ public:
         // convN  = 7;
         cout << "convN: " <<convN << endl;
 
-        var_gamma = 0.1; // DON'T TOUCH THIS. This one is for regularization.
+        var_gamma = 0.05; // DON'T TOUCH THIS. This one is for regularization.
 
         for(int i=0;i<3;++i){
             mx[i]      = new double[n1*n2*nt];
@@ -570,22 +570,22 @@ public:
 
     	double tauval = tau[1];
     	
-  //   	for(int i=0;i<n2;++i){
-  //           for(int j=0;j<n1;++j){
-  //               fftps2d->u[i*n1+j] = phiT[i*n1+j];
-  //           }
-  //       }
-  //       fftps2d->perform_inverse_laplacian(0);
-
-		// for(int i=0;i<n1*n2;++i){
-	 //    	double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * fftps2d->workspace[i];
-	 //        rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
-	 //    }
-
-        for(int i=0;i<n1*n2;++i){
-            double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * phiT[i];
-            rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
+    	for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                fftps2d->u[i*n1+j] = phiT[i*n1+j];
+            }
         }
+        fftps2d->perform_inverse_laplacian(0);
+
+		for(int i=0;i<n1*n2;++i){
+	    	double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * fftps2d->workspace[i];
+	        rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
+	    }
+
+        // for(int i=0;i<n1*n2;++i){
+        //     double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * phiT[i];
+        //     rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
+        // }
 
         for(int n=1;n<nt;++n){
 
@@ -736,6 +736,38 @@ public:
 
     double update_phi_all(double* const rho[], double* const mx[], double* const my[], double* const f[]){
 
+
+        for(int k=0;k<3;++k){
+
+            /*
+                update t = 0
+            */
+
+            for(int i=0;i<n1*n2;++i){
+                fftps2d->u[i] = rho[k][i];
+            }
+
+            fftps2d->perform_inverse_laplacian(0.1);
+
+            for(int i=0;i<n1*n2;++i){
+                phi[k][i] += sigma[k] * fftps[k]->workspace[i];
+            }
+
+            /*
+                update t = 1
+            */
+
+            for(int i=0;i<n1*n2;++i){
+                fftps2d->u[i] = rho[k][(nt-1)*n1*n2+i];
+            }
+
+            fftps2d->perform_inverse_laplacian(0.1);
+
+            for(int i=0;i<n1*n2;++i){
+                phi[k][(nt-1)*n1*n2+i] += sigma[k] * fftps[k]->workspace[i];
+            }
+        }
+
         for(int n=0;n<nt;++n){  
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
@@ -759,7 +791,8 @@ public:
                     double Deltarho2 = calculate_Delta_value(rho[2],n,i,j);
 
                     double convval = calculate_convval(&rho[1][n*n1*n2],i,j,var);
-                    double convval_gamma = calculate_convval(&rho[1][n*n1*n2],i,j,var_gamma);
+                    double convval_gamma = convval;
+                    if(var != var_gamma) convval_gamma = calculate_convval(&rho[1][n*n1*n2],i,j,var_gamma);
 
                     // fftps->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
                     fftps[0]->u[ind]  = - (dtrho0 + nablamx0 + nablamy0 + beta*rho[0][ind]*convval - etalist[0]*Deltarho0); 
@@ -777,9 +810,9 @@ public:
 
         for(int k=0;k<3;++k){
             if(k==0){
-                fftps[k]->perform_inverse_laplacian(0, etalist[0]);    
+                fftps[k]->perform_inverse_laplacian(beta, etalist[0]);    
             }else if(k==1){
-                fftps[k]->perform_inverse_laplacian(0, etalist[1]);    
+                fftps[k]->perform_inverse_laplacian(gamma-beta, etalist[1]);    
             }else{
                 fftps[k]->perform_inverse_laplacian(0, etalist[2]);    
             }

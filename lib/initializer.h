@@ -73,7 +73,7 @@ public:
 
 	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = 15*fmax(0.03-pow(x-0.6,2)-pow(y-0.6,2),0);
+	            rho[i*n1+j] = 15*fmax(0.03-pow(x-0.7,2)-pow(y-0.7,2),0);
 	        }
 	    }
 

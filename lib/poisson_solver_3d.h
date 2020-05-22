@@ -82,7 +82,7 @@ public:
 
 		fftw_execute(planIn);
 
-		double cval = 0;
+		double cval = c;
 
 		for(int n=0;n<nt;++n){
 			for(int i=0;i<n2;++i){

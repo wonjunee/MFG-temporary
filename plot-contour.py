@@ -109,7 +109,7 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
         ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax)
         ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax)
         max1 = 4*np.max(rho2)
-        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, max1)
+        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax)
 
 
         ax[0,i].set_axis_off()
@@ -216,6 +216,8 @@ def save_animation(SIR=True):
         cax1.set_array(np.flipud(rho0[n]))
         cax2.set_array(np.flipud(rho1[n]))
         
+        vmax = np.max(rho1)
+
         cax1.set_clim(0, vmax)
         cax2.set_clim(0, vmax)
     

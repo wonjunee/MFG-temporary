@@ -48,14 +48,14 @@ int main(int argc, char **argv)
     // coefficients for velocities
 
     double alpha1 = 1.0;
-    double alpha2 = 2.0;
+    double alpha2 = 5.0;
     double alpha3 = 1.0;
 
     // coefficients for SIR model
-    double beta  = 0.9;
-    double gamma = 0.05;
+    double beta  = 0.6;
+    double gamma = 0.4;
 
-    double var = 0.1;
+    double var = 0.01;
 
     double* rho[3];
 

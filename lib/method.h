@@ -117,11 +117,11 @@ public:
 
         this->tau[0] = tau;
         this->tau[1] = tau;
-        this->tau[2] = 0.1;
+        this->tau[2] = tau;
 
         this->sigma[0] = sigma;
-        this->sigma[1] = sigma;
-        this->sigma[2] = 0.2;
+        this->sigma[1] = sigma*0.6;
+        this->sigma[2] = sigma*0.3;
 
         this->c0=c0;
         this->c1=c1;
@@ -136,9 +136,9 @@ public:
         alphalist[2] = alpha3;
 
         karr = new double[3];
-        karr[0] = 1e-2;
-        karr[1] = 1e-2;
-        karr[2] = 1e-2;
+        karr[0] = 5e-2;
+        karr[1] = 5e-2;
+        karr[2] = 5e-2;
 
         xi    = new double[nt];
         xitmp = new double[nt];
@@ -155,7 +155,7 @@ public:
         // convN  = 7;
         cout << "convN: " <<convN << endl;
 
-        var_gamma = 0.05; // DON'T TOUCH THIS. This one is for regularization.
+        var_gamma = 0.1; // DON'T TOUCH THIS. This one is for regularization.
 
         for(int i=0;i<3;++i){
             mx[i]      = new double[n1*n2*nt];
@@ -583,7 +583,7 @@ public:
 	 //    }
 
         for(int i=0;i<n1*n2;++i){
-            double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval / nt * phiT[i];
+            double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * phiT[i];
             rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
         }
 
@@ -653,7 +653,6 @@ public:
         }
 
 	}
-
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
 
@@ -778,11 +777,11 @@ public:
 
         for(int k=0;k<3;++k){
             if(k==0){
-                fftps[k]->perform_inverse_laplacian(beta, rho[1],etalist[0]);    
+                fftps[k]->perform_inverse_laplacian(0, etalist[0]);    
             }else if(k==1){
-                fftps[k]->perform_inverse_laplacian(beta, gamma, rho[0],etalist[1]);    
+                fftps[k]->perform_inverse_laplacian(0, etalist[1]);    
             }else{
-                fftps[k]->perform_inverse_laplacian(0,etalist[2]);    
+                fftps[k]->perform_inverse_laplacian(0, etalist[2]);    
             }
         
             for(int i=0;i<n1*n2*nt;++i){
@@ -808,7 +807,7 @@ public:
 
     void update_phiT(double * const rho[], double* const f[]){
 
-    	double sigmaval = sigma[1] / nt;
+    	double sigmaval = sigma[1];
 
         for(int i=0;i<n2;++i){
             for(int j=0;j<n1;++j){
@@ -989,10 +988,10 @@ public:
             update_rho0(rho[0],rhotmps[1],rhotmps[2],mx[0],my[0],f[0]);
             update_rho1(rhotmps[0],rho[1],rhotmps[2],mx[1],my[1],f[1]);
 
-            if(iterPDHG > 12){
+            if(iterPDHG > 0){
                 update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);    
             }
-        
+
             /*
                     UPDATE PHI
             */
@@ -1006,7 +1005,7 @@ public:
 
             sanity_value  = update_phi_all(rho,mx,my,f);
 
-            if(iterPDHG > 12)
+            if(iterPDHG > 0)
             {
                 if(sanity_value > sanity_value_previous){           
                     for(int k=0;k<3;++k){
@@ -1015,7 +1014,7 @@ public:
                     }
                 }
 
-                if(sanity_value < 0.9 * sanity_value_previous){           
+                if(sanity_value < 0.95 * sanity_value_previous){           
                     for(int k=0;k<2;++k){
                         tau[k]   *= 1.01;
                         sigma[k] *= 1.01;

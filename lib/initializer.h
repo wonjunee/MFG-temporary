@@ -43,6 +43,8 @@ public:
 	            //     rho[i*n1+j] = 0;
 	            // }
 	            rho[i*n1+j] = 0.5 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
+
+	            // rho[i*n1+j] = 0.5;
 	        }
 	    }
 
@@ -73,7 +75,11 @@ public:
 
 	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = 15*fmax(0.03-pow(x-0.7,2)-pow(y-0.7,2),0);
+	            rho[i*n1+j] = 10*fmax(0.04-pow(x-0.6,2)-pow(y-0.6,2),0);
+
+	            // double r = sqrt((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5));
+
+	            // rho[i*n1+j] = 70*fmax(0, 0.005 - (r-0.25)*(r-0.25));
 	        }
 	    }
 

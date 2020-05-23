@@ -1,5 +1,4 @@
 #include <iostream>
-#include <fftw3.h>
 #include <iomanip>
 #include <cmath>
 #include <time.h>
@@ -53,7 +52,7 @@ int main(int argc, char **argv)
 
     // coefficients for SIR model
     double beta  = 0.7;
-    double gamma = 0.1;
+    double gamma = 0.5;
 
     double var = 0.05;
 

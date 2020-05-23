@@ -108,8 +108,7 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
         n = int((nt-1) * tlist[i]);
         ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax)
         ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax)
-        max1 = 4*np.max(rho2)
-        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax)
+        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax*0.6)
 
 
         ax[0,i].set_axis_off()
@@ -218,7 +217,8 @@ def save_animation(SIR=True):
         
         vmax = np.max(rho1)
 
-        cax1.set_clim(0, vmax)
+        # cax1.set_clim(0, vmax)
+        cax1.set_clim(np.min(rho0)*0.5, np.max(rho0)*2)
         cax2.set_clim(0, vmax)
     
         max0 = np.sum(rho0[0])
@@ -228,7 +228,7 @@ def save_animation(SIR=True):
         
 
         if(SIR==True):
-            max1 = 3*np.max(rho2)
+            max1 = 2*np.max(rho2)
             cax3.set_array(np.flipud(rho2[n]))
             cax3.set_clim(0, max1)
             ax[2].set_title("{:.4f}".format(np.sum(rho2[n])/max0))

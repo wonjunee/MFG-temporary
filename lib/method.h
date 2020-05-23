@@ -1,11 +1,13 @@
 #ifndef METHOD_H
 #define METHOD_H
 #include <iostream>
-#include <fftw3.h>
+
 #include <iomanip>
 #include <cmath>
 #include <time.h>
 #include <cstring>
+#include <omp.h> // parallelization
+#include <fftw3.h>
 // #include "poisson_solver.h"
 #include "poisson_solver_3d.h"
 #include "helper.h"
@@ -102,6 +104,7 @@ public:
            double c0, double c1, double c2, 
            double alpha1, double alpha2, double alpha3,
            double* etalist, double var){
+
         this->n1=n1;
         this->n2=n2;
         this->nt=nt;
@@ -155,7 +158,7 @@ public:
         // convN  = 7;
         cout << "convN: " <<convN << endl;
 
-        var_gamma = 0.05; // DON'T TOUCH THIS. This one is for regularization.
+        var_gamma = 0.02; // DON'T TOUCH THIS. This one is for regularization.
 
         for(int i=0;i<3;++i){
             mx[i]      = new double[n1*n2*nt];
@@ -607,24 +610,12 @@ public:
                     // double convval  = calculate_convval(&rho0[n*n1*n2],i,j);
                     double convval3 = calculate_convval3(&rho0[n*n1*n2],&phi[0][n*n1*n2],&phi[1][n*n1*n2],i,j,var);
                     double convval4 = calculate_convval4(&phi[1][n*n1*n2],&phi[2][n*n1*n2],i,j,var_gamma);
+                    // double convval4 = (phi[2][ind] - phi[1][ind]);
 
                     double newrhovalue = 0;
                     // double newrhovalue=cubic_solve(tau[1]*Dtphi + tau[1]*etalist[1]*Deltaphi - rho1[ind] + tau[1]*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
 
                     double aval=0,cval=0;
-
-                    // if(n==nt){
-                    // 	// newrhovalue=cubic_solve(tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + phiT[i*n1+j]*nt + karr[0]*rho0[ind] + karr[0]*rho2[ind]) - rho1[ind] + tauval*betaval*(phi[1][ind] - phi[0][ind])*convval + tauval*gammaval*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tauval*alphalist[1]*mvalue*mvalue);
-                    // }else{
-                    //     aval = 1.0/(tauval*karr[1]+1) * 
-                    //             ( 
-                    //                 tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + karr[0]*rho0[ind] + karr[0]*rho2[ind]) 
-                    //                 - rho1[ind] 
-                    //                 + tauval*betaval*convval3
-                    //                 + tauval*gammaval * (phi[2][ind] - phi[1][ind]) 
-                    //             );
-                    //     cval = -0.5/h*tauval/(tauval*karr[1]+1)*alphalist[1]*mvalue*mvalue;
-                    // }
 
                         // aval = 1.0/(tauval*karr[1]+1) * 
                         //         ( 
@@ -768,43 +759,51 @@ public:
             }
         }
 
+
+    int n, i, j, ind;
+    double dtrho0, nablamx0, nablamy0, dtrho1, nablamx1, nablamy1, dtrho2, nablamx2, nablamy2, Deltarho0, Deltarho1, Deltarho2, convval, convval_gamma;
+
+    #pragma omp parallel shared(fftps, rho, mx, my, var, var_gamma, etalist, beta, gamma) private(n,i,j,ind,dtrho0, nablamx0, nablamy0, dtrho1, nablamx1, nablamy1, dtrho2, nablamx2, nablamy2, Deltarho0, Deltarho1, Deltarho2, convval, convval_gamma)
+    {    
+    #pragma omp for
         for(int n=0;n<nt;++n){  
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
-                    int ind = n*n1*n2+i*n1+j;
+                    ind = n*n1*n2+i*n1+j;
 
-                    double dtrho0 = calculate_dtrho(rho[0], n, i, j);
-                    double nablamx0=calculate_grad_mx(mx[0],n,i,j);
-                    double nablamy0=calculate_grad_my(my[0],n,i,j);
+                    dtrho0 = calculate_dtrho(rho[0], n, i, j);
+                    nablamx0=calculate_grad_mx(mx[0],n,i,j);
+                    nablamy0=calculate_grad_my(my[0],n,i,j);
 
-                    double dtrho1 = calculate_dtrho(rho[1], n, i, j);
-                    double nablamx1=calculate_grad_mx(mx[1],n,i,j);
-                    double nablamy1=calculate_grad_my(my[1],n,i,j);
+                    dtrho1 = calculate_dtrho(rho[1], n, i, j);
+                    nablamx1=calculate_grad_mx(mx[1],n,i,j);
+                    nablamy1=calculate_grad_my(my[1],n,i,j);
 
-                    double dtrho2 = calculate_dtrho(rho[2], n, i, j);
-                    double nablamx2=calculate_grad_mx(mx[2],n,i,j);
-                    double nablamy2=calculate_grad_my(my[2],n,i,j);
+                    dtrho2 = calculate_dtrho(rho[2], n, i, j);
+                    nablamx2=calculate_grad_mx(mx[2],n,i,j);
+                    nablamy2=calculate_grad_my(my[2],n,i,j);
 
-                    double Deltarho0 = calculate_Delta_value(rho[0],n,i,j);
-                    double Deltarho1 = calculate_Delta_value(rho[1],n,i,j);
-                    double Deltarho2 = calculate_Delta_value(rho[2],n,i,j);
+                    Deltarho0 = calculate_Delta_value(rho[0],n,i,j);
+                    Deltarho1 = calculate_Delta_value(rho[1],n,i,j);
+                    Deltarho2 = calculate_Delta_value(rho[2],n,i,j);
 
-                    double convval = calculate_convval(&rho[1][n*n1*n2],i,j,var);
-                    double convval_gamma = convval;
+                    convval = calculate_convval(&rho[1][n*n1*n2],i,j,var);
+                    convval_gamma = convval;
                     if(var != var_gamma) convval_gamma = calculate_convval(&rho[1][n*n1*n2],i,j,var_gamma);
 
                     // fftps->u[n*n1*n2+i*n1+j]=-(dtrho+nablamx+nablamy + beta*rho[0][ind]*rho[1][ind] - etalist[0]*Deltarho); 
                     fftps[0]->u[ind]  = - (dtrho0 + nablamx0 + nablamy0 + beta*rho[0][ind]*convval - etalist[0]*Deltarho0); 
 
                     fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*convval*rho[0][ind] + gamma*convval_gamma - etalist[1]*Deltarho1);
-                    // fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*convval*rho[0][ind] + gamma*rho[1][ind] - etalist[1]*Deltarho1);
+                    // fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*rho[0][ind]*convval + gamma*rho[1][ind] - etalist[1]*Deltarho1);
 
                     fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*convval_gamma - etalist[2]*Deltarho2); 
                     // fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*rho[1][ind] - etalist[2]*Deltarho2); 
                 }
             }
         }
+    } // #pragma
 
         double error = 0;
 

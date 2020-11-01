@@ -262,4 +262,51 @@ public:
 
 		fftw_execute(planOut);
 	}
+
+	void perform_convolution(const double* rho, const double var){
+		// memcpy(workspace, rho, n1*n2*sizeof(double));
+
+		for(int i=0;i<n1*n2;++i){
+			workspace[i] = rho[i];
+		}
+
+		fftw_execute(planIn);
+
+		for(int i=0;i<n2;++i){
+			for(int j=0;j<n1;++j){
+				double x = (1.0*j)/n1;
+				double y = (1.0*i)/n2;
+				workspace[i*n1+j] *= exp(-kernel[i*n1+j]*var*var);
+			}
+		}
+
+		for(int i=0;i<n1*n2;++i){
+			workspace[i] /= 4*n1*n2;
+		}
+
+		fftw_execute(planOut);
+	}
+
+
+	void perform_convolution(const double* rho, const double* phi0, const double* phi1, const double var){
+		for(int i=0;i<n1*n2;++i){
+			workspace[i] = rho[i] * (phi1[i] - phi0[i]);
+		}
+
+		fftw_execute(planIn);
+
+		for(int i=0;i<n2;++i){
+			for(int j=0;j<n1;++j){
+				double x = (1.0*j)/n1;
+				double y = (1.0*i)/n2;
+				workspace[i*n1+j] *= exp(-kernel[i*n1+j]*var*var);
+			}
+		}
+
+		for(int i=0;i<n1*n2;++i){
+			workspace[i] /= 4*n1*n2;
+		}
+
+		fftw_execute(planOut);
+	}
 };

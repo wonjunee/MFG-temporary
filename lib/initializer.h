@@ -42,9 +42,40 @@ public:
 	            // }else{
 	            //     rho[i*n1+j] = 0;
 	            // }
+
+	            /*
+	            	Exp1
+	            */
 	            rho[i*n1+j] = 0.5 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
 
+	            /*
+	            	Exp2
+	            */
 	            // rho[i*n1+j] = 0.5;
+
+	            /*
+	            	nonsymmetric example  
+	            */
+	            // if(x>0.1 && x<0.4 && y>0.1 && y<0.4)
+	            // {
+	            // 	rho[i*n1+j] = 0.3;
+	            // }
+	            
+	            // if(x>0.3 && x<0.7 && y>0.3 && y<0.7)
+	            // {
+	            // 	rho[i*n1+j] = 0.3;
+	            // }
+
+	            // if(x>0.5 && x<0.8 && y>0.65 && y<0.9)
+	            // {
+	            // 	rho[i*n1+j] = 0.3;
+	            // }
+
+	            // rho[i*n1+j]  = 0.45 * exp(-15*pow(x-0.3,2)-15*pow(y-0.3,2));
+	            // rho[i*n1+j] += 0.45 * exp(-30*pow(x-0.8,2)-30*pow(y-0.35,2));
+	            // rho[i*n1+j] += 0.45 * exp(-25*pow(x-0.5,2)-25*pow(y-0.75,2));
+
+
 	        }
 	    }
 
@@ -75,11 +106,44 @@ public:
 
 	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
 
-	            rho[i*n1+j] = 10*fmax(0.04-pow(x-0.6,2)-pow(y-0.6,2),0);
+	            rho[i*n1+j]  = 15*fmax(0.03-pow(x-0.7,2)-pow(y-0.7,2),0);
+
+	            /*
+	            	Ring
+	            */
 
 	            // double r = sqrt((x-0.5)*(x-0.5)+(y-0.5)*(y-0.5));
-
 	            // rho[i*n1+j] = 70*fmax(0, 0.005 - (r-0.25)*(r-0.25));
+
+
+	            /*
+	            	multiple squares
+	            */
+	            
+	            // if(x>0.35 && x<0.55 && y>0.65 && y<0.85){
+	            // 	rho[i*n1+j] = 0.4;
+	            // }
+
+	            // if(x>0.55 && x<0.8 && y>0.2 && y<0.55){
+	            // 	rho[i*n1+j] = 0.4;
+	            // }
+
+	            // if(x>0.14 && x<0.28 && y>0.14 && y<0.28)
+	            // {
+	            // 	rho[i*n1+j] = 0.4;
+	            // }
+
+	            // if(x>0.22 && x<0.36 && y>0.22 && y<0.36)
+	            // {
+	            // 	rho[i*n1+j] = 0.4;
+	            // }
+
+	            /*
+	            	Nonsymmetric initial densities
+	            */
+	            // rho[i*n1+j]   = 10*fmax(0.04-pow(x-0.2,2)-pow(y-0.65,2),0);
+	            // rho[i*n1+j]  += 12*fmax(0.03-pow(x-0.5,2)-pow(y-0.2,2),0);
+	            // rho[i*n1+j]  += 12*fmax(0.03-pow(x-0.8,2)-pow(y-0.55,2),0);
 	        }
 	    }
 
@@ -94,7 +158,7 @@ public:
 
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
-	            rho[i*n1+j] = 1e-4;
+	            rho[i*n1+j] = 0;
 	        }
 	    }
 

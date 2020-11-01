@@ -24,6 +24,7 @@ with open("{}/parameters.csv".format(directory)) as F:
         gamma = float(i[7])
         var   = float(i[8])
 
+var = 0.02
 #--------------------------------------------------
 #   Getting Rho Data
 #--------------------------------------------------
@@ -51,64 +52,22 @@ type_video = sys.argv[1]
 N = 5
 tlist = [0,0.25,0.5,0.75,1.0]
 
-
-
-# fig, ax = plt.subplots(2,N,figsize=(9,4))
-
-# fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
-
-# for i in range(N):
-#     n = int((nt-1) * tlist[i]);
-#     ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, np.max(rho0))
-#     ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, np.max(rho1))
-
-
-#     ax[0,i].set_axis_off()
-#     ax[1,i].set_axis_off()
-
-#     ax[0,i].set_title("t = {:.2f}\nsum = {:.2f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
-#     ax[1,i].set_title("sum = {:.2f}".format(np.sum(rho1[n])/(n1*n2)))
-
-# plt.savefig("figures/SI.png")
-# plt.show()
-
-
-# fig, ax = plt.subplots(1,1,figsize=(4,3))
-
-# fig.subplots_adjust(bottom=0.1, top=1.0, right=1, left=0.1, wspace=0, hspace=0.2)
-
-# xx = np.linspace(0,1,nt)
-# yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
-# yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
-
-# # ax.plot(xx,yy0,'.-',label="S")
-# # ax.plot(xx,yy1,'.-',label="I")
-
-# ax.plot(xx,yy0,label="S")
-# ax.plot(xx,yy1,label="I")
-
-# ax.set_xlabel("t")
-# # ax.set_ylim(200,700)
-
-# plt.legend()
-# plt.savefig("figures/SI-plot.eps")
-# plt.show()
-
-
-
-
 def save_plot_contour(visual=True, SIR=True, title_type=0):
     fig, ax = plt.subplots(3,N,figsize=(9,6))
 
     fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
 
-    vmax = np.max(rho0)
+    vmax0 = np.max(rho0)
+    vmax1 = np.max(rho1)
+    vmax2 = np.max(rho2)
+
+    vmax = max(vmax0, vmax1, vmax2)
 
     for i in range(N):
         n = int((nt-1) * tlist[i]);
         ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax)
         ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax)
-        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax*0.6)
+        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax2)
 
 
         ax[0,i].set_axis_off()
@@ -215,13 +174,18 @@ def save_animation(SIR=True):
         cax1.set_array(np.flipud(rho0[n]))
         cax2.set_array(np.flipud(rho1[n]))
         
-        vmax = np.max(rho1)
+                
+        vmax0 = np.max(rho0)
+        vmax1 = np.max(rho1)
+        vmax2 = np.max(rho2)
+
+        vmax = max(vmax0, vmax1, vmax2)
 
         # cax1.set_clim(0, vmax)
-        cax1.set_clim(np.min(rho0)*0.5, np.max(rho0)*2)
+        cax1.set_clim(0, vmax)
         cax2.set_clim(0, vmax)
     
-        max0 = np.sum(rho0[0])
+        max0 = n1*n2
 
         ax[0].set_title("{:.4f}".format(np.sum(rho0[n])/max0))
         ax[1].set_title("{:.4f}".format(np.sum(rho1[n])/max0))
@@ -230,7 +194,7 @@ def save_animation(SIR=True):
         if(SIR==True):
             max1 = 2*np.max(rho2)
             cax3.set_array(np.flipud(rho2[n]))
-            cax3.set_clim(0, max1)
+            cax3.set_clim(0, vmax2)
             ax[2].set_title("{:.4f}".format(np.sum(rho2[n])/max0))
 
 
@@ -254,8 +218,65 @@ def save_animation(SIR=True):
     anim.save("video.mp4", fps=30)
 
 
+def save_animation2():
+    # First set up the figure, the axis, and the plot element we want to animate
+    num = 3; w = 12
+    
+    fig, ax = plt.subplots(1,num,figsize=(w,4))
+    fig.subplots_adjust(bottom=0, top=0.8, right=1, left=0, hspace=0.1, wspace=0)
+
+    cax1 = ax[0].imshow(rho0[0], cmap='inferno')
+    cax2 = ax[1].imshow(rho1[0], cmap='inferno')
+
+    ax[0].set_axis_off()
+    ax[1].set_axis_off()
+
+    cax3 = ax[2].imshow(rho2[0], cmap='inferno')
+    ax[2].set_axis_off()
+
+    vmax = np.max(rho1)
+
+    # animation function.  This is called sequentially
+    def animate(n):
+        # fig.clear()
+        cax1.set_array(np.flipud(rho0[n]))
+        cax2.set_array(np.flipud(rho1[n]))
+        
+        vmax0 = np.max(rho0)
+        vmax1 = np.max(rho1)
+        vmax2 = np.max(rho2)
+
+        vmax = max(vmax0, vmax1, vmax2)
+
+        # cax1.set_clim(0, vmax)
+        cax1.set_clim(0, vmax)
+        cax2.set_clim(0, vmax)
+
+        cax3.set_array(np.flipud(rho2[n]))
+        cax3.set_clim(0, vmax2)
+
+        ax[0].set_title("S: {:.4f}".format(np.sum(rho0[n])/(n1*n2)))
+        ax[1].set_title("I: {:.4f}".format(np.sum(rho1[n])/(n1*n2)))
+        ax[2].set_title("R: {:.4f}".format(np.sum(rho2[n])/(n1*n2)))
+
+        # cax1.set_clim(0, 10)
+        plt.suptitle("$\\beta$={:.2}, $\\gamma$={:.2}, $\\sigma$={:.3}\nt={:.2f}".format(beta,gamma,var,n/(nt-1)))
+        return cax1, 
+
+    # call the animator.  blit=True means only re-draw the parts that have changed.
+    anim = animation.FuncAnimation(fig, animate, 
+                                   frames=nt, interval=10, blit=True)
+
+    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
+    # installed.  The extra_args ensure that the x264 codec is used, so that
+    # the video can be embedded in html5.  You may need to adjust this for
+    # your system: for more information, see
+    # http://matplotlib.sourceforge.net/api/animation_api.html
+    anim.save("video.mp4", fps=10)
+
+
 
 if type_video=="0":
     save_animation(SIR=True)
 elif type_video=="1":
-    save_animation(SIR=False)
+    save_animation2()

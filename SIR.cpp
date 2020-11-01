@@ -4,7 +4,7 @@
 #include <time.h>
 #include <cstring>
 // #include "poisson_solver.h"
-// #include "poisson_solver_3d.h"
+#include "poisson_solver_3d.h"
 #include "helper.h"
 #include "initializer.h"
 #include "method.h"
@@ -14,9 +14,9 @@ using namespace std;
 int main(int argc, char **argv)
 {
 
-    if(argc!=10){
+    if(argc!=12){
         cout << "Need to do the following : " << endl;
-        cout << "./main.exe [n1] [n2] [nt] [tau] [sigma] [tolerance] [max iteration] [eta] [skip]" << endl;
+        cout << "./main.exe [n1] [n2] [nt] [tau] [sigma] [tolerance] [max iteration] [eta] [skip] [beta] [gamma]" << endl;
         exit(1);
     }
 
@@ -31,6 +31,8 @@ int main(int argc, char **argv)
     int max_iteration=stoi(argv[7]);
     double eta = stod(argv[8]);
     int skip=stoi(argv[9]);
+    double beta  = stod(argv[10]);
+    double gamma = stod(argv[11]);
 
     double base=0;
 
@@ -51,10 +53,9 @@ int main(int argc, char **argv)
     double alpha3 = 1.0;
 
     // coefficients for SIR model
-    double beta  = 0.7;
-    double gamma = 0.5;
 
-    double var = 0.05;
+    double var = 0.02;
+
 
     double* rho[3];
 
@@ -120,35 +121,7 @@ int main(int argc, char **argv)
     clock_t t;
     t = clock();
 
-    string filename;    
-
-    filename="./data/rho0-"+to_string(0)+".csv";
-    create_bin_file(&rho[0][(nt-1)*n1*n2],n1*n2,filename);
-    filename="./data/rho1-"+to_string(0)+".csv";
-    create_bin_file(&rho[1][(nt-1)*n1*n2],n1*n2,filename);
-    filename="./data/rho2-"+to_string(0)+".csv";
-    create_bin_file(&rho[2][(nt-1)*n1*n2],n1*n2,filename);
-
-    for(int iter=0; iter<1; ++iter)
-    {
-        method.run(rho,f_arr,skip);   
-
-        filename="./data/rho0-"+to_string(iter+1)+".csv";
-        create_bin_file(&rho[0][(nt-1)*n1*n2],n1*n2,filename);
-        filename="./data/rho1-"+to_string(iter+1)+".csv";
-        create_bin_file(&rho[1][(nt-1)*n1*n2],n1*n2,filename);
-        filename="./data/rho2-"+to_string(iter+1)+".csv";
-        create_bin_file(&rho[2][(nt-1)*n1*n2],n1*n2,filename);
-
-        for(int n=0;n<nt-1;++n){
-            for(int i=0;i<n1*n2;++i){
-                rho[0][n*n1*n2+i] = rho[0][(nt-1)*n1*n2+i];
-                rho[1][n*n1*n2+i] = rho[1][(nt-1)*n1*n2+i];
-                rho[2][n*n1*n2+i] = rho[2][(nt-1)*n1*n2+i];
-            }
-        }
-    }
-    
+    method.run(rho,f_arr,skip);   
 
     t = clock() - t;
 

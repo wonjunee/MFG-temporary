@@ -11,12 +11,163 @@
 
 using namespace std;
 
+// This is SIR model without moving
+class SIR_model{
+public:
+    int n1;
+    int n2;
+    int nt;
+    double dx;
+    double dy;
+    double dt;
+
+    double* tau;
+    double* sigma;
+    double h;
+
+    int max_iteration;
+    double tolerance;
+
+    double* mx[3];
+    double* my[3];
+    double* phi[3];
+    double* phitmps[3];
+    double* rhotmps[3];
+
+    double* convarr;
+
+    double* phiT;
+    double* phiTtmp; 
+
+    double* xi;
+    double* xitmp;
+    double TOTAL_SUM;
+
+    double* karr;
+
+    double energy;
+    double previous_energy;
+    double previous_dual;
+
+    double m;
+
+    double M0;
+
+    double c0;
+    double c1;
+    double c2;
+
+    double* etalist;
+    double* alphalist;
+
+    int convN;
+    double conv_sum;
+    double conv_r;
+
+    // For SIR model
+
+    double beta;
+    double gamma;
+    double var;
+    double var_gamma;
+
+    // ------------------------
+
+    SIR_model(){
+    }
+
+    SIR_model(int n1, int n2, int nt, double dx, double dy, double dt, 
+           double tau, double sigma, int max_iteration, double tolerance, 
+           double c0, double c1, double c2, 
+           double alpha1, double alpha2, double alpha3,
+           double* etalist, double var){
+
+        this->n1=n1;
+        this->n2=n2;
+        this->nt=nt;
+        this->dx=dx;
+        this->dy=dy;
+        this->dt=dt;
+        
+        this->max_iteration=max_iteration;
+        this->tolerance=tolerance;
+
+        this->tau  =new double[3];
+        this->sigma=new double[3];
+
+        this->tau[0] = tau;
+        this->tau[1] = tau;
+        this->tau[2] = tau;
+
+        this->sigma[0] = sigma;
+        this->sigma[1] = sigma;
+        this->sigma[2] = sigma;
+
+        this->c0=c0;
+        this->c1=c1;
+        this->c2=c2;
+
+        this->etalist = etalist; // this contains the eta values for viscosity terms
+        this->var     = var;
+
+        alphalist = new double[3];
+        alphalist[0] = alpha1;
+        alphalist[1] = alpha2;
+        alphalist[2] = alpha3;
+
+        karr = new double[3];
+        karr[0] = 1e-2;
+        karr[1] = 1e-2;
+        karr[2] = 1e-2;
+
+        xi    = new double[nt];
+        xitmp = new double[nt];
+
+        phiT     = new double[n1*n2];
+        phiTtmp  = new double[n1*n2];
+
+        convarr  = new double[n1*n2];
+
+        M0 = 0.5;
+        conv_r = 0.2;
+        convN  = conv_r*n1;
+        convN  = 2 * convN + 1;
+        // convN  = 1;
+        cout << "convN: " <<convN << endl;
+
+        var_gamma = 0.01; // DON'T TOUCH THIS. This one is for regularization.
+    }
+
+
+    void run(double* rho[], double* const* f, int skip=1){
+
+        printf("beta: %f\tgamma: %f", beta, gamma);
+
+        for(int n=0;n<nt-1;++n){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    rho[0][(n+1)*n1*n2+i*n1+j] = rho[0][(n)*n1*n2+i*n1+j] + 1.0/nt * ( - beta * rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j]);
+                    rho[1][(n+1)*n1*n2+i*n1+j] = rho[1][(n)*n1*n2+i*n1+j] + 1.0/nt * ( beta * rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j] - gamma * rho[1][n*n1*n2+i*n1+j]);
+                    rho[2][(n+1)*n1*n2+i*n1+j] = rho[2][(n)*n1*n2+i*n1+j] + 1.0/nt * (gamma * rho[1][n*n1*n2+i*n1+j]);
+                }
+            }
+        }
+
+        create_csv_file(rho[0],"./data/rho0.csv",n1,n2,nt);
+        create_csv_file(rho[1],"./data/rho1.csv",n1,n2,nt);
+        create_csv_file(rho[2],"./data/rho2.csv",n1,n2,nt);
+
+        cout<<"The method is done!!"<<endl;
+    }
+
+}; // Method class
+
 int main(int argc, char **argv)
 {
 
     if(argc!=12){
         cout << "Need to do the following : " << endl;
-        cout << "./main.exe [n1] [n2] [nt] [tau] [sigma] [tolerance] [max iteration] [eta] [skip] [beta] [gamma]" << endl;
+        cout << argv[0] <<  " [n1] [n2] [nt] [tau] [sigma] [tolerance] [max iteration] [eta] [skip] [beta] [gamma]" << endl;
         exit(1);
     }
 
@@ -85,12 +236,25 @@ int main(int argc, char **argv)
     //         double x = (j+0.5)/n1;
     //         double y = (i+0.5)/n2;
 
+    //         // f_arr[1][i*n1+j] = 1 * (pow(x-0.9,2) + pow(y-0.9,2));
+
+    //         // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)) f_arr[1][i*n1+j] = 1; else f_arr[1][i*n1+j] = 0;
+    //         if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) f_arr[1][i*n1+j]= 1;
+    //     }
+    // }
+
+    // for(int i=0;i<n2;++i){
+    //     for(int j=0;j<n1;++j){
+    //         double x = (j+0.5)/n1;
+    //         double y = (i+0.5)/n2;
+
     //         f_arr[1][i*n1+j] = 10 * ((x-0.9)*(x-0.9) + (y-0.9)*(y-0.9));
     //     }
     // }
 
     // initialize the method
     Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist, var);
+    // SIR_model method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist, var);
 
     // coefficients for SIR system
     method.h = 1;

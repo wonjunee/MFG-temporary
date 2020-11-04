@@ -37,8 +37,8 @@ public:
 	            double x=1.0*(j+0.5)*dx;
 	            double y=1.0*(i+0.5)*dy;
 
-	            // if(pow(x-0.5,2) + pow(y-0.5,2) >= pow(0.1,2)){
-	            //     rho[i*n1+j] = 1;    
+	            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.3,2)){
+	            //     rho[i*n1+j] = 0.4;    
 	            // }else{
 	            //     rho[i*n1+j] = 0;
 	            // }
@@ -47,6 +47,7 @@ public:
 	            	Exp1
 	            */
 	            rho[i*n1+j] = 0.5 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
+
 
 	            /*
 	            	Exp2
@@ -98,16 +99,20 @@ public:
 	            double x=1.0*(j+0.5)*dx;
 	            double y=1.0*(i+0.5)*dy;
 
-	            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.1,2)){
-	            //     rho[i*n1+j] = 1;    
+	            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)){
+	            //     rho[i*n1+j] = 0.4;    
 	            // }else{
 	            //     rho[i*n1+j] = 0;
 	            // }
 
-	            // rho[i*n1+j] = exp(-60*pow(x-0.6,2)-60*pow(y-0.6,2)) + base;
+	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
+	            // rho[i*n1+j] = 0.3 * exp(-35*pow(x-0.5,2)-35*pow(y-0.5,2)) + base;
 
-	            rho[i*n1+j]  = 15*fmax(0.03-pow(x-0.7,2)-pow(y-0.7,2),0);
+	            /* exp1 */
+	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
 
+	            /* exp2 */
+	            rho[i*n1+j] = 0.5 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2)) + base;
 	            /*
 	            	Ring
 	            */

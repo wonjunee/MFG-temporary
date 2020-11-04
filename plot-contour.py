@@ -38,6 +38,11 @@ rho0 = open_csv("{}/rho0.csv".format(directory),nt,n1,n2)
 rho1 = open_csv("{}/rho1.csv".format(directory),nt,n1,n2)
 rho2 = open_csv("{}/rho2.csv".format(directory),nt,n1,n2)
 
+directory_2 = "data-2"
+rho0_2 = open_csv("{}/rho0.csv".format(directory_2),nt,n1,n2)
+rho1_2 = open_csv("{}/rho1.csv".format(directory_2),nt,n1,n2)
+rho2_2 = open_csv("{}/rho2.csv".format(directory_2),nt,n1,n2)
+
 
 
 #--------------------------------------------------
@@ -67,7 +72,7 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
         n = int((nt-1) * tlist[i]);
         ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax)
         ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax)
-        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax2)
+        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax)
 
 
         ax[0,i].set_axis_off()
@@ -122,6 +127,45 @@ def save_plot(visual=True, total=False):
         plt.show()
     plt.close()
 
+def save_plot_2(visual=True, total=False):
+
+    fig, ax = plt.subplots(1,1,figsize=(5,3))
+
+    fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
+
+    xx = np.linspace(0,1,nt)
+    max0 = np.sum(rho0[0])
+    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
+    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
+    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/(n1*n2)
+
+    yy0_2 = np.sum(np.sum(rho0_2,axis=1),axis=1)/(n1*n2)
+    yy1_2 = np.sum(np.sum(rho1_2,axis=1),axis=1)/(n1*n2)
+    yy2_2 = np.sum(np.sum(rho2_2,axis=1),axis=1)/(n1*n2)
+
+    # ax.plot(xx,yy0,'.-',label="S")
+    # ax.plot(xx,yy1,'.-',label="I")
+
+    ax.plot(xx,yy0,label="S with velocity")
+    ax.plot(xx,yy1,label="I with velocity")
+    ax.plot(xx,yy2,label="R with velocity")
+
+    ax.plot(xx,yy0_2,'.',label="S without velocity")
+    ax.plot(xx,yy1_2,'.',label="I without velocity")
+    ax.plot(xx,yy2_2,'.',label="R without velocity")
+
+    if(total==True):
+        ax.plot(xx,yy2+yy1+yy0,label="Total")
+
+    ax.set_xlabel("t")
+    # ax.set_ylim(200,700)
+
+    plt.legend(loc='lower left', framealpha=0.5)
+    plt.savefig("figures/SIR-plot.eps")
+    if(visual==True):
+        plt.show()
+    plt.close()
+
 
 fig, ax = plt.subplots(1,N,figsize=(9,6))
 
@@ -144,6 +188,7 @@ save_plot_contour(visual=True, SIR=True, title_type = 0)
 save_plot_contour(visual=False, SIR=True, title_type = 1)
 save_plot(visual=True,  total=True)
 save_plot(visual=False,  total=False)
+save_plot_2(visual=False,  total=False)
 
 
 def save_animation(SIR=True):
@@ -194,7 +239,7 @@ def save_animation(SIR=True):
         if(SIR==True):
             max1 = 2*np.max(rho2)
             cax3.set_array(np.flipud(rho2[n]))
-            cax3.set_clim(0, vmax2)
+            cax3.set_clim(0, vmax)
             ax[2].set_title("{:.4f}".format(np.sum(rho2[n])/max0))
 
 
@@ -246,14 +291,14 @@ def save_animation2():
         vmax1 = np.max(rho1)
         vmax2 = np.max(rho2)
 
-        vmax = max(vmax0, vmax1, vmax2)
+        vmax  = max(vmax0, vmax1, vmax2)
 
         # cax1.set_clim(0, vmax)
         cax1.set_clim(0, vmax)
         cax2.set_clim(0, vmax)
 
         cax3.set_array(np.flipud(rho2[n]))
-        cax3.set_clim(0, vmax2)
+        cax3.set_clim(0, vmax)
 
         ax[0].set_title("S: {:.4f}".format(np.sum(rho0[n])/(n1*n2)))
         ax[1].set_title("I: {:.4f}".format(np.sum(rho1[n])/(n1*n2)))

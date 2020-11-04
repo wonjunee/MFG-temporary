@@ -1,3 +1,10 @@
+#ifndef POISSONSOLVER_H
+#define POISSONSOLVER_H
+
+#include <iostream>
+#include <fftw3.h>
+
+using namespace std;
 
 class poisson_solver{
 public:
@@ -242,17 +249,14 @@ public:
 		fftw_execute(planOut);
 	}
 
-	void perform_inverse_laplacian_phiT(const double c, const double* phiT){
+	void perform_inverse_laplacian_phiT(const double c){
 
 		for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
 
 		fftw_execute(planIn);
 
 		for(int i=0;i<n1*n2;++i){
-			double val = kernel[i];
-			if(phiT[i]>0){
-				val += c;
-			}
+			double val = c + kernel[i];
 			if(val==0){
 				workspace[i]=0;	
 			}else{
@@ -310,3 +314,5 @@ public:
 		fftw_execute(planOut);
 	}
 };
+
+#endif

@@ -458,12 +458,15 @@ public:
     double calculate_E1prime(const double* rho, const double* f, int i, int j) const{
         int ind = (nt-1)*n1*n2+i*n1+j;
         double eval = 1.0/c1 * (phi[1][ind] - f[i*n1+j]);
+        eval = fmax(0, eval);
         double val = 0;
         // if(eval > 0 && f[i*n1+j] >= 0) val = 1.0/(2*c1_value) * pow(fmax(0, (phi[1][ind]-f[i])), 2);
 
         // if(eval > 0 && f[i*n1+j] >= 0) val = 0.5 * eval * (phi[1][ind]-f[i]);
 
         val = phi[1][ind]*rho[ind];
+
+
 
         return val;
     }
@@ -494,11 +497,12 @@ public:
         return val;
     }
     double calculate_deltaE1prime(const double* rho, const double* f, int i, int j){
-        int ind = (nt-1)*n1*n2+i*n1+j;
-        double eval = 1.0/c1 * (phi[1][ind] - f[i*n1+j]);
-        double val = 0;
-        if(eval > 0 && f[i*n1+j] >= 0) val = eval;
-        return val;
+        double eval = 1.0/c1 * (phiT[i*n1+j] - f[i*n1+j]);
+        // double val = 0;
+        // if(eval > 0 && f[i*n1+j] >= 0) val = eval;
+        return fmax(eval,0);
+
+
     }
     double calculate_deltaE2prime(const double* rho, const double* f, int i, int j){
         int ind = (nt-1)*n1*n2+i*n1+j;
@@ -586,22 +590,24 @@ public:
 
     	double tauval = tau[1];
     	
-    	for(int i=0;i<n2;++i){
-            for(int j=0;j<n1;++j){
-                fftps2d->u[i*n1+j] = phiT[i*n1+j];
-            }
+  //   	for(int i=0;i<n2;++i){
+  //           for(int j=0;j<n1;++j){
+  //               fftps2d->u[i*n1+j] = 1.0/c1 * (phiT[i*n1+j]- f[i*n1+j]);
+  //           }
+  //       }
+  //       fftps2d->perform_inverse_laplacian(10);
+
+		// for(int i=0;i<n1*n2;++i){
+	 //    	double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * fftps2d->workspace[i];
+	 //        rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
+	 //    }
+
+        for(int i=0;i<n1*n2;++i){
+            double deltaErho = c1 * rho1[(nt-1)*n1*n2+i] + f[i];
+            double phiTval   = phiT[i];
+            double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * (deltaErho - phiTval);
+            rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
         }
-        fftps2d->perform_inverse_laplacian(0);
-
-		for(int i=0;i<n1*n2;++i){
-	    	double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * fftps2d->workspace[i];
-	        rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
-	    }
-
-        // for(int i=0;i<n1*n2;++i){
-        //     double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * phiT[i];
-        //     rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
-        // }
 
         for(int n=1;n<nt;++n){
 
@@ -869,19 +875,36 @@ public:
 
     	double sigmaval = sigma[1];
 
+        // for(int i=0;i<n2;++i){
+        //     for(int j=0;j<n1;++j){
+        //         double rhoval = rho[1][(nt-1)*n1*n2+i*n1+j];
+        //         double DeltaphiT = calculate_Delta_value(phiT,0,i,j);
+
+        //         fftps2d->u[i*n1+j] = (sigmaval * rhoval - DeltaphiT); 
+        //     }
+        // }
+
+        // fftps2d->perform_inverse_laplacian_phiT(sigmaval/c1,phiT);
+        // for(int i=0;i<n1*n2;++i){
+        //     phiT[i] = fftps2d->workspace[i];
+        // }
+
+        // minimize - deltaEstar(phi1(T)) - 1/2sigma ||phi1 - phi1^k||^2
+
         for(int i=0;i<n2;++i){
             for(int j=0;j<n1;++j){
-                double rhoval = rho[1][(nt-1)*n1*n2+i*n1+j];
-                double DeltaphiT = calculate_Delta_value(phiT,0,i,j);
-
-                fftps2d->u[i*n1+j] = (sigmaval * rhoval - DeltaphiT); 
+                double deltaE = calculate_deltaE1prime(rho[1], f[1], i, j);
+                fftps2d->u[i*n1+j] = - deltaE;
             }
         }
 
-        fftps2d->perform_inverse_laplacian_phiT(sigmaval/c1,phiT);
+        fftps2d->perform_inverse_laplacian_phiT(10);
+
         for(int i=0;i<n1*n2;++i){
-            phiT[i] = fftps2d->workspace[i];
+            phiT[i] += sigmaval * fftps2d->workspace[i];
         }
+
+
 
         // for(int i=0;i<n1*n2;++i){
         // 	double val = 1;

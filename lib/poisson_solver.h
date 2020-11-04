@@ -1,3 +1,10 @@
+#ifndef POISSONSOLVER_H
+#define POISSONSOLVER_H
+
+#include <iostream>
+#include <fftw3.h>
+
+using namespace std;
 
 class poisson_solver{
 public:
@@ -140,3 +147,5 @@ public:
 	    fftw_destroy_plan(planOut);
 	}
 };
+
+#endif

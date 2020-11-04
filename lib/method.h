@@ -345,7 +345,7 @@ public:
         Updaate m0, m1, m2;
     */
 
-    void update_m(double* mx, double* my, const double* rho, const double* phi, const int ind){
+    void update_m_first_order(double* mx, double* my, const double* rho, const double* phi, const int ind){
 
         for(int n=0;n<nt;++n){
             for(int i=0;i<n2;++i){
@@ -389,6 +389,41 @@ public:
                     if(i==n2-1){
                         my[n*n1*n2+i*n1+j]=0;                       
                     }
+                }
+            }   
+        }   
+    }
+
+    // centered difference
+    void update_m(double* mx, double* my, const double* rho, const double* phi, const int ind){
+
+        for(int n=0;n<nt;++n){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    double nablaxphi = 0;
+                    double nablayphi = 0;
+
+                    if(j==n1-1){
+                        nablaxphi = (phi[n*n1*n2+i*n1+j]-phi[n*n1*n2+i*n1+j-1])/(2.0*dx);
+                    }else if(j==0){
+                        nablaxphi = (phi[n*n1*n2+i*n1+j+1]-phi[n*n1*n2+i*n1+j])/(2.0*dx);
+                    }else{
+                        nablaxphi = (phi[n*n1*n2+i*n1+j+1]-phi[n*n1*n2+i*n1+j-1])/(2.0*dx);
+                    }
+
+                    if(i==n2-1){
+                        nablayphi = (phi[n*n1*n2+(i)*n1+j]-phi[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
+                    }else if(i==0){
+                        nablayphi = (phi[n*n1*n2+(i+1)*n1+j]-phi[n*n1*n2+(i)*n1+j])/(2.0*dy);
+                    }else{
+                        nablayphi = (phi[n*n1*n2+(i+1)*n1+j]-phi[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
+                    }
+
+                    double rhovalx=rho[n*n1*n2+i*n1+j];
+                    double rhovaly=rho[n*n1*n2+i*n1+j];
+                    
+                    mx[n*n1*n2+i*n1+j] = h * rhovalx/(tau[ind] * alphalist[ind] + h * rhovalx) * (mx[n*n1*n2+i*n1+j] - tau[ind] * nablaxphi);
+                    my[n*n1*n2+i*n1+j] = h * rhovaly/(tau[ind] * alphalist[ind] + h * rhovaly) * (my[n*n1*n2+i*n1+j] - tau[ind] * nablayphi);
                 }
             }   
         }   
@@ -699,10 +734,18 @@ public:
     double calculate_grad_mx(const double* mxTmp, int n, int i, int j){
         double mxval;
 
+        // if(j==0){
+        //     mxval = (mxTmp[n*n1*n2+i*n1+j])/dx;
+        // }else{
+        //     mxval = (mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+j-1])/dx;
+        // }
+
         if(j==0){
-            mxval = (mxTmp[n*n1*n2+i*n1+j])/dx;
+            mxval = (mxTmp[n*n1*n2+i*n1+j+1])/(2.0*dx);
+        }else if(j==n1-1){
+            mxval = (-mxTmp[n*n1*n2+i*n1+j-1])/(2.0*dx);
         }else{
-            mxval = (mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+j-1])/dx;
+            mxval = (mxTmp[n*n1*n2+i*n1+j+1]-mxTmp[n*n1*n2+i*n1+j-1])/(2.0*dx);
         }
 
         return mxval;
@@ -711,10 +754,18 @@ public:
     double calculate_grad_my(const double* myTmp, int n, int i, int j){
         double myval;
 
+        // if(i==0){
+        //     myval = (myTmp[n*n1*n2+i*n1+j])/dy;
+        // }else{
+        //     myval = (myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+(i-1)*n1+j])/dy;
+        // }
+
         if(i==0){
-            myval = (myTmp[n*n1*n2+i*n1+j])/dy;
+            myval = (myTmp[n*n1*n2+(i+1)*n1+j])/(2.0*dy);
+        }else if(i==0){
+            myval = (myTmp[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
         }else{
-            myval = (myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+(i-1)*n1+j])/dy;
+            myval = (myTmp[n*n1*n2+(i+1)*n1+j]-myTmp[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
         }
 
         return myval;
@@ -764,7 +815,7 @@ public:
                 fftps2d->u[i] = rho[k][i];
             }
 
-            fftps2d->perform_inverse_laplacian(0.1);
+            fftps2d->perform_inverse_laplacian(100);
 
             for(int i=0;i<n1*n2;++i){
                 phi[k][i] += sigma[k] * fftps[k]->workspace[i];
@@ -778,7 +829,7 @@ public:
                 fftps2d->u[i] = rho[k][(nt-1)*n1*n2+i];
             }
 
-            fftps2d->perform_inverse_laplacian(0.1);
+            fftps2d->perform_inverse_laplacian(100);
 
             for(int i=0;i<n1*n2;++i){
                 phi[k][(nt-1)*n1*n2+i] += sigma[k] * fftps[k]->workspace[i];
@@ -837,17 +888,19 @@ public:
                 }
             }
         }
+
     // } // #pragma
 
         double error = 0;
 
         for(int k=0;k<3;++k){
             if(k==0){
+                // fftps[k]->perform_inverse_laplacian(beta, etalist[0]);    
                 fftps[k]->perform_inverse_laplacian(beta, etalist[0]);    
             }else if(k==1){
-                fftps[k]->perform_inverse_laplacian(gamma-beta, etalist[1]);    
+                fftps[k]->perform_inverse_laplacian(gamma+beta, etalist[1]);    
             }else{
-                fftps[k]->perform_inverse_laplacian(0, etalist[2]);    
+                fftps[k]->perform_inverse_laplacian(gamma, etalist[2]);    
             }
         
             for(int i=0;i<n1*n2*nt;++i){
@@ -1060,20 +1113,16 @@ public:
             // get the data before updates
 
 
-            update_m(mx[0],my[0],rho[0],phi[0],0);
-            update_m(mx[1],my[1],rho[1],phi[1],1);
-            update_m(mx[2],my[2],rho[2],phi[2],2);
-
             for(int k=0;k<3;++k){
                 memcpy(rhotmps[k],rho[k],n1*n2*nt*sizeof(double));
             }
 
+            update_m(mx[0],my[0],rho[0],phi[0],0);
             update_rho0(rho[0],rhotmps[1],rhotmps[2],mx[0],my[0],f[0]);
+            update_m(mx[1],my[1],rho[1],phi[1],1);
             update_rho1(rhotmps[0],rho[1],rhotmps[2],mx[1],my[1],f[1]);
-
-            if(iterPDHG > 0){
-                update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);    
-            }
+            update_m(mx[2],my[2],rho[2],phi[2],2);
+            update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);   
 
             /*
                     UPDATE PHI
@@ -1088,22 +1137,15 @@ public:
 
             sanity_value  = update_phi_all(rho,mx,my,f);
 
-            if(iterPDHG > 0)
-            {
-                if(sanity_value > sanity_value_previous){           
-                    for(int k=0;k<3;++k){
-                        tau[k]   *= 0.999;
-                        sigma[k] *= 0.999;
-                    }
-                }
-
-                // if(sanity_value < 0.95 * sanity_value_previous){           
-                //     for(int k=0;k<2;++k){
-                //         tau[k]   *= 1.01;
-                //         sigma[k] *= 1.01;
-                //     }
-                // }
-            }
+            // if(iterPDHG > 0)
+            // {
+            //     if(sanity_value > sanity_value_previous){           
+            //         for(int k=0;k<3;++k){
+            //             tau[k]   *= 0.999;
+            //             sigma[k] *= 0.999;
+            //         }
+            //     }
+            // }
             
             sanity_value_previous = sanity_value;
 

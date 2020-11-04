@@ -46,7 +46,7 @@ public:
 	            /*
 	            	Exp1
 	            */
-	            rho[i*n1+j] = 0.5 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
+	            rho[i*n1+j] = 0.6 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
 
 
 	            /*
@@ -112,7 +112,7 @@ public:
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
 
 	            /* exp2 */
-	            rho[i*n1+j] = 0.5 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2)) + base;
+	            rho[i*n1+j] = 0.6 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2)) + base;
 	            /*
 	            	Ring
 	            */

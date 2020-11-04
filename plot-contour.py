@@ -150,9 +150,9 @@ def save_plot_2(visual=True, total=False):
     ax.plot(xx,yy1,label="I with velocity")
     ax.plot(xx,yy2,label="R with velocity")
 
-    ax.plot(xx,yy0_2,'.',label="S without velocity")
-    ax.plot(xx,yy1_2,'.',label="I without velocity")
-    ax.plot(xx,yy2_2,'.',label="R without velocity")
+    ax.plot(xx,yy0_2,'--',label="S without velocity")
+    ax.plot(xx,yy1_2,'--',label="I without velocity")
+    ax.plot(xx,yy2_2,'--',label="R without velocity")
 
     if(total==True):
         ax.plot(xx,yy2+yy1+yy0,label="Total")

@@ -436,16 +436,20 @@ public:
     void calculate_rho_related(double& mvalue, double& Dtphi, double& Deltaphi, const int n, const int i, const int j, const double* mx, const double* my, const double* phi){
 
         double mxvalue, myvalue;
-        if(j==0){
-            mxvalue = 0.5*(mx[n*n1*n2+i*n1+j]);
-        }else{
-            mxvalue = 0.5*(mx[n*n1*n2+i*n1+j]+mx[n*n1*n2+i*n1+j-1]);
-        }
-        if(i==0){
-            myvalue = 0.5*(my[n*n1*n2+i*n1+j]);
-        }else{
-            myvalue = 0.5*(my[n*n1*n2+i*n1+j]+my[n*n1*n2+(i-1)*n1+j]);
-        }
+        // if(j==0){
+        //     mxvalue = 0.5*(mx[n*n1*n2+i*n1+j]);
+        // }else{
+        //     mxvalue = 0.5*(mx[n*n1*n2+i*n1+j]+mx[n*n1*n2+i*n1+j-1]);
+        // }
+        // if(i==0){
+        //     myvalue = 0.5*(my[n*n1*n2+i*n1+j]);
+        // }else{
+        //     myvalue = 0.5*(my[n*n1*n2+i*n1+j]+my[n*n1*n2+(i-1)*n1+j]);
+        // }
+
+        mxvalue = mx[n*n1*n2+i*n1+j];
+        myvalue = my[n*n1*n2+i*n1+j];
+        
         mvalue = sqrt(mxvalue*mxvalue + myvalue*myvalue);
 
         // if(n==nt-1){
@@ -805,36 +809,36 @@ public:
     double update_phi_all(double* const rho[], double* const mx[], double* const my[], double* const f[]){
 
 
-        for(int k=0;k<3;++k){
+        // for(int k=0;k<3;++k){
 
-            /*
-                update t = 0
-            */
+        //     /*
+        //         update t = 0
+        //     */
 
-            for(int i=0;i<n1*n2;++i){
-                fftps2d->u[i] = rho[k][i];
-            }
+        //     for(int i=0;i<n1*n2;++i){
+        //         fftps2d->u[i] = rho[k][i];
+        //     }
 
-            fftps2d->perform_inverse_laplacian(100);
+        //     fftps2d->perform_inverse_laplacian(100);
 
-            for(int i=0;i<n1*n2;++i){
-                phi[k][i] += sigma[k] * fftps[k]->workspace[i];
-            }
+        //     for(int i=0;i<n1*n2;++i){
+        //         phi[k][i] += sigma[k] * fftps[k]->workspace[i];
+        //     }
 
-            /*
-                update t = 1
-            */
+        //     /*
+        //         update t = 1
+        //     */
 
-            for(int i=0;i<n1*n2;++i){
-                fftps2d->u[i] = rho[k][(nt-1)*n1*n2+i];
-            }
+        //     for(int i=0;i<n1*n2;++i){
+        //         fftps2d->u[i] = rho[k][(nt-1)*n1*n2+i];
+        //     }
 
-            fftps2d->perform_inverse_laplacian(100);
+        //     fftps2d->perform_inverse_laplacian(100);
 
-            for(int i=0;i<n1*n2;++i){
-                phi[k][(nt-1)*n1*n2+i] += sigma[k] * fftps[k]->workspace[i];
-            }
-        }
+        //     for(int i=0;i<n1*n2;++i){
+        //         phi[k][(nt-1)*n1*n2+i] += sigma[k] * fftps[k]->workspace[i];
+        //     }
+        // }
 
 
     int n, i, j, ind;
@@ -889,6 +893,7 @@ public:
             }
         }
 
+
     // } // #pragma
 
         double error = 0;
@@ -896,11 +901,13 @@ public:
         for(int k=0;k<3;++k){
             if(k==0){
                 // fftps[k]->perform_inverse_laplacian(beta, etalist[0]);    
-                fftps[k]->perform_inverse_laplacian(beta, etalist[0]);    
+                fftps[k]->perform_inverse_laplacian(10, etalist[0]);
             }else if(k==1){
-                fftps[k]->perform_inverse_laplacian(gamma+beta, etalist[1]);    
+                // fftps[k]->perform_inverse_laplacian(gamma+beta, etalist[1]);    
+                fftps[k]->perform_inverse_laplacian(0, etalist[1]);    
             }else{
-                fftps[k]->perform_inverse_laplacian(gamma, etalist[2]);    
+                // fftps[k]->perform_inverse_laplacian(gamma, etalist[2]);    
+                fftps[k]->perform_inverse_laplacian(10, etalist[2]);    
             }
         
             for(int i=0;i<n1*n2*nt;++i){
@@ -1117,12 +1124,14 @@ public:
                 memcpy(rhotmps[k],rho[k],n1*n2*nt*sizeof(double));
             }
 
-            update_m(mx[0],my[0],rho[0],phi[0],0);
+            
             update_rho0(rho[0],rhotmps[1],rhotmps[2],mx[0],my[0],f[0]);
-            update_m(mx[1],my[1],rho[1],phi[1],1);
             update_rho1(rhotmps[0],rho[1],rhotmps[2],mx[1],my[1],f[1]);
-            update_m(mx[2],my[2],rho[2],phi[2],2);
-            update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);   
+            update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);
+
+            update_m(mx[0],my[0],rho[0],phi[0],0);
+            update_m(mx[1],my[1],rho[1],phi[1],1);
+            update_m(mx[2],my[2],rho[2],phi[2],2);   
 
             /*
                     UPDATE PHI
@@ -1159,11 +1168,11 @@ public:
             /*
                 UPDATE XI
             */
-            memcpy(xitmp, xi, nt*sizeof(double));
-            update_xi(rho);
-            for(int n=0;n<nt;++n){
-            	xi[n] = 2*xi[n] - xitmp[n];
-            }
+            // memcpy(xitmp, xi, nt*sizeof(double));
+            // update_xi(rho);
+            // for(int n=0;n<nt;++n){
+            // 	xi[n] = 2*xi[n] - xitmp[n];
+            // }
 
 
             /*

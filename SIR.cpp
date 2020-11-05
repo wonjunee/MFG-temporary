@@ -200,7 +200,7 @@ int main(int argc, char **argv)
     // coefficients for velocities
 
     double alpha1 = 1.0;
-    double alpha2 = 10.0;
+    double alpha2 = 2.0;
     double alpha3 = 1.0;
 
     // coefficients for SIR model

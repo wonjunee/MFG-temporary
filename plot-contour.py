@@ -98,7 +98,7 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
 
 def save_plot(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(5,3))
+    fig, ax = plt.subplots(1,1,figsize=(5,4))
 
     fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
@@ -129,7 +129,7 @@ def save_plot(visual=True, total=False):
 
 def save_plot_2(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(5,3))
+    fig, ax = plt.subplots(1,1,figsize=(5,4))
 
     fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
@@ -146,13 +146,13 @@ def save_plot_2(visual=True, total=False):
     # ax.plot(xx,yy0,'.-',label="S")
     # ax.plot(xx,yy1,'.-',label="I")
 
-    ax.plot(xx,yy0,label="S with velocity")
-    ax.plot(xx,yy1,label="I with velocity")
-    ax.plot(xx,yy2,label="R with velocity")
+    ax.plot(xx,yy0,'.',label="S with velocity")
+    ax.plot(xx,yy1,'.',label="I with velocity")
+    ax.plot(xx,yy2,'.',label="R with velocity")
 
-    ax.plot(xx,yy0_2,'--',label="S without velocity")
-    ax.plot(xx,yy1_2,'--',label="I without velocity")
-    ax.plot(xx,yy2_2,'--',label="R without velocity")
+    ax.plot(xx,yy0_2,label="S without velocity")
+    ax.plot(xx,yy1_2,label="I without velocity")
+    ax.plot(xx,yy2_2,label="R without velocity")
 
     if(total==True):
         ax.plot(xx,yy2+yy1+yy0,label="Total")
@@ -160,7 +160,7 @@ def save_plot_2(visual=True, total=False):
     ax.set_xlabel("t")
     # ax.set_ylim(200,700)
 
-    plt.legend(loc='lower left', framealpha=0.5)
+    plt.legend(loc='best', bbox_to_anchor=(0.5, 0.5))
     plt.savefig("figures/SIR-plot.eps")
     if(visual==True):
         plt.show()

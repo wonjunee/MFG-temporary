@@ -127,11 +127,11 @@ def save_plot(visual=True, total=False):
         plt.show()
     plt.close()
 
-def save_plot_2(visual=True, total=False):
+def save_plot_1(visual=True, total=False):
 
     fig, ax = plt.subplots(1,1,figsize=(5,4))
 
-    fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
+    # fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
     xx = np.linspace(0,1,nt)
     max0 = np.sum(rho0[0])
@@ -146,22 +146,106 @@ def save_plot_2(visual=True, total=False):
     # ax.plot(xx,yy0,'.-',label="S")
     # ax.plot(xx,yy1,'.-',label="I")
 
-    ax.plot(xx,yy0,'.',label="S with velocity")
-    ax.plot(xx,yy1,'.',label="I with velocity")
-    ax.plot(xx,yy2,'.',label="R with velocity")
+    ax.plot(xx,yy0,'-',label="$\\rho_S$ with control")
+    # ax.plot(xx,yy1,'-',label="$\\rho_I$ with control")
+    # ax.plot(xx,yy2,'.',label="R with control")
 
-    ax.plot(xx,yy0_2,label="S without velocity")
-    ax.plot(xx,yy1_2,label="I without velocity")
-    ax.plot(xx,yy2_2,label="R without velocity")
+    ax.plot(xx,yy0_2,label="$\\rho_S$ without control")
+    # ax.plot(xx,yy1_2,label="$\\rho_I$ without control")
+    # ax.plot(xx,yy2_2,label="R without control")
 
     if(total==True):
         ax.plot(xx,yy2+yy1+yy0,label="Total")
 
-    ax.set_xlabel("t")
+    ax.set_xlabel("Time t")
+    ax.set_ylabel("Total population")
     # ax.set_ylim(200,700)
 
-    plt.legend(loc='best', bbox_to_anchor=(0.5, 0.5))
-    plt.savefig("figures/SIR-plot.eps")
+    # plt.legend(loc='best', bbox_to_anchor=(0.5, 0.5))
+    plt.legend(loc='lower left')
+    plt.savefig("figures/SIR-plot-S.eps", bbox_inches='tight')
+    if(visual==True):
+        plt.show()
+    plt.close()
+
+def save_plot_2(visual=True, total=False):
+
+    fig, ax = plt.subplots(1,1,figsize=(5,4))
+
+    # fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
+
+    xx = np.linspace(0,1,nt)
+    max0 = np.sum(rho0[0])
+    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
+    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
+    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/(n1*n2)
+
+    yy0_2 = np.sum(np.sum(rho0_2,axis=1),axis=1)/(n1*n2)
+    yy1_2 = np.sum(np.sum(rho1_2,axis=1),axis=1)/(n1*n2)
+    yy2_2 = np.sum(np.sum(rho2_2,axis=1),axis=1)/(n1*n2)
+
+    # ax.plot(xx,yy0,'.-',label="S")
+    # ax.plot(xx,yy1,'.-',label="I")
+
+    # ax.plot(xx,yy0,'.',label="S with control")
+    ax.plot(xx,yy1,'-',label="$\\rho_I$ with control")
+    # ax.plot(xx,yy2,'.',label="R with control")
+
+    # ax.plot(xx,yy0_2,label="S without control")
+    ax.plot(xx,yy1_2,label="$\\rho_I$ without control")
+    # ax.plot(xx,yy2_2,label="R without control")
+
+    if(total==True):
+        ax.plot(xx,yy2+yy1+yy0,label="Total")
+
+    ax.set_xlabel("Time t")
+    ax.set_ylabel("Total population")
+    # ax.set_ylim(200,700)
+
+    # plt.legend(loc='best', bbox_to_anchor=(0.5, 0.5))
+    plt.legend(loc='upper left')
+    plt.savefig("figures/SIR-plot-I.eps", bbox_inches='tight')
+    if(visual==True):
+        plt.show()
+    plt.close()
+
+def save_plot_3(visual=True, total=False):
+
+    fig, ax = plt.subplots(1,1,figsize=(5,4))
+
+    # fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
+
+    xx = np.linspace(0,1,nt)
+    max0 = np.sum(rho0[0])
+    yy0 = np.sum(np.sum(rho0,axis=1),axis=1)/(n1*n2)
+    yy1 = np.sum(np.sum(rho1,axis=1),axis=1)/(n1*n2)
+    yy2 = np.sum(np.sum(rho2,axis=1),axis=1)/(n1*n2)
+
+    yy0_2 = np.sum(np.sum(rho0_2,axis=1),axis=1)/(n1*n2)
+    yy1_2 = np.sum(np.sum(rho1_2,axis=1),axis=1)/(n1*n2)
+    yy2_2 = np.sum(np.sum(rho2_2,axis=1),axis=1)/(n1*n2)
+
+    # ax.plot(xx,yy0,'.-',label="S")
+    # ax.plot(xx,yy1,'.-',label="I")
+
+    # ax.plot(xx,yy0,'.',label="S with velocity")
+    # ax.plot(xx,yy1,'-',label="$\\rho_I$ with velocity")
+    ax.plot(xx,yy2,'-',label="$\\rho_R$ with control")
+
+    # ax.plot(xx,yy0_2,label="S without control")
+    # ax.plot(xx,yy1_2,label="$\\rho_I$ without control")
+    ax.plot(xx,yy2_2,label="$\\rho_R$ without control")
+
+    if(total==True):
+        ax.plot(xx,yy2+yy1+yy0,label="Total")
+
+    ax.set_xlabel("Time t")
+    ax.set_ylabel("Total population")
+    # ax.set_ylim(200,700)
+
+    # plt.legend(loc='best', bbox_to_anchor=(0.5, 0.5))
+    plt.legend(loc='upper left')
+    plt.savefig("figures/SIR-plot-R.eps", bbox_inches='tight')
     if(visual==True):
         plt.show()
     plt.close()
@@ -183,12 +267,37 @@ plt.show()
 plt.close();
 
 
+plt.imshow(rho0[0], cmap='inferno')
+plt.axis('off')
+plt.savefig("./figures/rho0-initial.png", bbox_inches='tight')
+
+plt.imshow(rho1[0], cmap='inferno')
+plt.axis('off')
+plt.savefig("./figures/rho1-initial.png", bbox_inches='tight')
+
+plt.imshow(rho2[0], cmap='inferno')
+plt.axis('off')
+plt.savefig("./figures/rho2-initial.png", bbox_inches='tight')
+
+plt.imshow(rho0[(nt-1)], cmap='inferno')
+plt.axis('off')
+plt.savefig("./figures/rho0-with-control.png", bbox_inches='tight')
+
+plt.imshow(rho1[(nt-1)], cmap='inferno')
+plt.axis('off')
+plt.savefig("./figures/rho1-with-control.png", bbox_inches='tight')
+
+plt.imshow(rho2[(nt-1)], cmap='inferno').set_clim(0, 0.3*np.max(rho1[0]))
+plt.axis('off')
+plt.savefig("./figures/rho2-with-control.png", bbox_inches='tight')
 
 save_plot_contour(visual=True, SIR=True, title_type = 0)
 save_plot_contour(visual=False, SIR=True, title_type = 1)
 save_plot(visual=True,  total=True)
 save_plot(visual=False,  total=False)
+save_plot_1(visual=False,  total=False)
 save_plot_2(visual=False,  total=False)
+save_plot_3(visual=False,  total=False)
 
 
 def save_animation(SIR=True):

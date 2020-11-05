@@ -122,7 +122,7 @@ public:
 
         this->tau[0] = tau;
         this->tau[1] = tau;
-        this->tau[2] = tau;
+        this->tau[2] = tau * 0.2;
 
         this->sigma[0] = sigma;
         this->sigma[1] = sigma;
@@ -641,12 +641,12 @@ public:
 	 //        rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
 	 //    }
 
-        for(int i=0;i<n1*n2;++i){
-            double deltaErho = c1 * rho1[(nt-1)*n1*n2+i] + f[i];
-            double phiTval   = phiT[i];
-            double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * (deltaErho - phiTval);
-            rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
-        }
+        // for(int i=0;i<n1*n2;++i){
+        //     double deltaErho = c1 * rho1[(nt-1)*n1*n2+i] + f[i];
+        //     double phiTval   = phiT[i];
+        //     double newrhovalue = rho1[(nt-1)*n1*n2+i] - tauval * (deltaErho - phiTval);
+        //     rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
+        // }
 
         for(int n=1;n<nt;++n){
 
@@ -904,10 +904,10 @@ public:
                 fftps[k]->perform_inverse_laplacian(10, etalist[0]);
             }else if(k==1){
                 // fftps[k]->perform_inverse_laplacian(gamma+beta, etalist[1]);    
-                fftps[k]->perform_inverse_laplacian(0, etalist[1]);    
+                fftps[k]->perform_inverse_laplacian(0, 0);    
             }else{
                 // fftps[k]->perform_inverse_laplacian(gamma, etalist[2]);    
-                fftps[k]->perform_inverse_laplacian(10, etalist[2]);    
+                fftps[k]->perform_inverse_laplacian(0, 0);    
             }
         
             for(int i=0;i<n1*n2*nt;++i){
@@ -1127,11 +1127,21 @@ public:
             
             update_rho0(rho[0],rhotmps[1],rhotmps[2],mx[0],my[0],f[0]);
             update_rho1(rhotmps[0],rho[1],rhotmps[2],mx[1],my[1],f[1]);
-            update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);
+            // update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);
 
             update_m(mx[0],my[0],rho[0],phi[0],0);
             update_m(mx[1],my[1],rho[1],phi[1],1);
-            update_m(mx[2],my[2],rho[2],phi[2],2);   
+            // update_m(mx[2],my[2],rho[2],phi[2],2);   
+
+            for(int n=0;n<nt-1;++n){
+                for(int i=0;i<n2;++i){
+                    for(int j=0;j<n1;++j){
+                        // rho[0][(n+1)*n1*n2+i*n1+j] = rho[0][(n)*n1*n2+i*n1+j] + 1.0/nt * ( - beta * rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j]);
+                        // rho[1][(n+1)*n1*n2+i*n1+j] = rho[1][(n)*n1*n2+i*n1+j] + 1.0/nt * ( beta * rho[0][n*n1*n2+i*n1+j] * rho[1][n*n1*n2+i*n1+j] - gamma * rho[1][n*n1*n2+i*n1+j]);
+                        rho[2][(n+1)*n1*n2+i*n1+j] = rho[2][(n)*n1*n2+i*n1+j] + 1.0/nt * (gamma * rho[1][n*n1*n2+i*n1+j]);
+                    }
+                }
+            }
 
             /*
                     UPDATE PHI

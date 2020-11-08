@@ -231,17 +231,17 @@ int main(int argc, char **argv)
     // init.intialize_f(f);
     for(int k=0;k<3;++k) for(int i=0;i<n1*n2;++i) f_arr[k][i] = 0;
 
-    // for(int i=0;i<n2;++i){
-    //     for(int j=0;j<n1;++j){
-    //         double x = (j+0.5)/n1;
-    //         double y = (i+0.5)/n2;
+    for(int i=0;i<n2;++i){
+        for(int j=0;j<n1;++j){
+            double x = (j+0.5)/n1;
+            double y = (i+0.5)/n2;
 
-    //         // f_arr[1][i*n1+j] = 1 * (pow(x-0.9,2) + pow(y-0.9,2));
+            // f_arr[1][i*n1+j] = 1 * (pow(x-0.9,2) + pow(y-0.9,2));
 
-    //         // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)) f_arr[1][i*n1+j] = 1; else f_arr[1][i*n1+j] = 0;
-    //         if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) f_arr[1][i*n1+j]= 1;
-    //     }
-    // }
+            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)) f_arr[1][i*n1+j] = 1; else f_arr[1][i*n1+j] = 0;
+            if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) f_arr[1][i*n1+j]= 1;
+        }
+    }
 
     // for(int i=0;i<n2;++i){
     //     for(int j=0;j<n1;++j){

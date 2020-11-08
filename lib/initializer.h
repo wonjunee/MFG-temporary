@@ -37,16 +37,16 @@ public:
 	            double x=1.0*(j+0.5)*dx;
 	            double y=1.0*(i+0.5)*dy;
 
-	            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.3,2)){
-	            //     rho[i*n1+j] = 0.4;    
-	            // }else{
-	            //     rho[i*n1+j] = 0;
-	            // }
+	            if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.3,2)){
+	                rho[i*n1+j] = 0.4;    
+	            }else{
+	                rho[i*n1+j] = 0;
+	            }
 
 	            /*
 	            	Exp1
 	            */
-	            rho[i*n1+j] = 0.6 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
+	            // rho[i*n1+j] = 0.6 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
 
 
 	            /*
@@ -72,9 +72,8 @@ public:
 	            // 	rho[i*n1+j] = 0.3;
 	            // }
 
-	            // rho[i*n1+j]  = 0.45 * exp(-15*pow(x-0.3,2)-15*pow(y-0.3,2));
-	            // rho[i*n1+j] += 0.45 * exp(-30*pow(x-0.8,2)-30*pow(y-0.35,2));
-	            // rho[i*n1+j] += 0.45 * exp(-25*pow(x-0.5,2)-25*pow(y-0.75,2));
+	            /* Exp2 DON'T TOUCH */
+	            // rho[i*n1+j]  = 0.45 * exp(-15*pow(x-0.3,2)-15*pow(y-0.3,2)); rho[i*n1+j] += 0.45 * exp(-30*pow(x-0.8,2)-30*pow(y-0.35,2)); rho[i*n1+j] += 0.45 * exp(-25*pow(x-0.5,2)-25*pow(y-0.75,2));
 
 
 	        }
@@ -99,11 +98,11 @@ public:
 	            double x=1.0*(j+0.5)*dx;
 	            double y=1.0*(i+0.5)*dy;
 
-	            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)){
-	            //     rho[i*n1+j] = 0.4;    
-	            // }else{
-	            //     rho[i*n1+j] = 0;
-	            // }
+	            if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)){
+	                rho[i*n1+j] = 0.4;    
+	            }else{
+	                rho[i*n1+j] = 0;
+	            }
 
 	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
 	            // rho[i*n1+j] = 0.3 * exp(-35*pow(x-0.5,2)-35*pow(y-0.5,2)) + base;
@@ -112,7 +111,7 @@ public:
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
 
 	            /* exp2 */
-	            rho[i*n1+j] = 0.6 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2)) + base;
+	            // rho[i*n1+j] = 0.6 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2)) + base;
 	            /*
 	            	Ring
 	            */
@@ -143,12 +142,8 @@ public:
 	            // 	rho[i*n1+j] = 0.4;
 	            // }
 
-	            /*
-	            	Nonsymmetric initial densities
-	            */
-	            // rho[i*n1+j]   = 10*fmax(0.04-pow(x-0.2,2)-pow(y-0.65,2),0);
-	            // rho[i*n1+j]  += 12*fmax(0.03-pow(x-0.5,2)-pow(y-0.2,2),0);
-	            // rho[i*n1+j]  += 12*fmax(0.03-pow(x-0.8,2)-pow(y-0.55,2),0);
+            	/* Exp2 DON'T TOUCH */
+	            // rho[i*n1+j]   = 10*fmax(0.04-pow(x-0.2,2)-pow(y-0.65,2),0); rho[i*n1+j]  += 12*fmax(0.03-pow(x-0.5,2)-pow(y-0.2,2),0); rho[i*n1+j]  += 12*fmax(0.03-pow(x-0.8,2)-pow(y-0.55,2),0);
 	        }
 	    }
 

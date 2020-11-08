@@ -98,7 +98,7 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
 
 def save_plot(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(5,4))
+    fig, ax = plt.subplots(1,1,figsize=(3,3))
 
     fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
@@ -129,7 +129,7 @@ def save_plot(visual=True, total=False):
 
 def save_plot_1(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(5,4))
+    fig, ax = plt.subplots(1,1,figsize=(3,3))
 
     # fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
@@ -170,7 +170,7 @@ def save_plot_1(visual=True, total=False):
 
 def save_plot_2(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(5,4))
+    fig, ax = plt.subplots(1,1,figsize=(3,3))
 
     # fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
@@ -211,7 +211,7 @@ def save_plot_2(visual=True, total=False):
 
 def save_plot_3(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(5,4))
+    fig, ax = plt.subplots(1,1,figsize=(3,3))
 
     # fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
 
@@ -271,7 +271,7 @@ plt.imshow(rho0[0], cmap='inferno')
 plt.axis('off')
 plt.savefig("./figures/rho0-initial.png", bbox_inches='tight')
 
-plt.imshow(rho1[0], cmap='inferno')
+plt.imshow(rho1[0], cmap='inferno').set_clim(0, 1.2*np.max(rho1[0]))
 plt.axis('off')
 plt.savefig("./figures/rho1-initial.png", bbox_inches='tight')
 
@@ -279,11 +279,11 @@ plt.imshow(rho2[0], cmap='inferno')
 plt.axis('off')
 plt.savefig("./figures/rho2-initial.png", bbox_inches='tight')
 
-plt.imshow(rho0[(nt-1)], cmap='inferno')
+plt.imshow(rho0[(nt-1)], cmap='inferno').set_clim(0, np.max(rho1[0]))
 plt.axis('off')
 plt.savefig("./figures/rho0-with-control.png", bbox_inches='tight')
 
-plt.imshow(rho1[(nt-1)], cmap='inferno')
+plt.imshow(rho1[(nt-1)], cmap='inferno').set_clim(0, 1.2*np.max(rho1[0]))
 plt.axis('off')
 plt.savefig("./figures/rho1-with-control.png", bbox_inches='tight')
 
@@ -357,7 +357,7 @@ def save_animation(SIR=True):
         ax[2].set_title("{:.4f}\n{:.4f}".format(np.sum(rho2[n])/max0,np.max(rho2[n])))
 
         # cax1.set_clim(0, 10)
-        plt.suptitle("c0={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}, var={:.3}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,var,n/(nt-1),np.max(rho0[n]+rho1[n]+rho2[n])))
+        plt.suptitle("c110={:.2}, c1={:.2}, c2={:.2}, beta={:.2}, gamma={:.2}, var={:.3}\nt={:.2f},{:.2f}".format(c0,c1,c2,beta,gamma,var,n/(nt-1),np.max(rho0[n]+rho1[n]+rho2[n])))
         return cax1, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.
@@ -434,3 +434,7 @@ if type_video=="0":
     save_animation(SIR=True)
 elif type_video=="1":
     save_animation2()
+
+
+
+print(np.max(rho0[n]+rho1[n]+rho2[n]))

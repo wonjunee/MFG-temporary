@@ -63,6 +63,8 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
     fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
 
     vmax0 = np.max(rho0)
+    print("vmax0 : ",vmax0)
+    vmax0 = 0.8
     vmax1 = np.max(rho1)
     vmax2 = np.max(rho2)
 
@@ -70,9 +72,9 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
 
     for i in range(N):
         n = int((nt-1) * tlist[i]);
-        ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax)
-        ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax)
-        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax)
+        ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax0)
+        ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax0)
+        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax0)
 
 
         ax[0,i].set_axis_off()

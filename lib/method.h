@@ -681,6 +681,15 @@ public:
                 }
             }
         }
+
+
+        for(int i=0;i<n1*n2;++i){
+            double deltaErho = c1 * rho1[(nt-1)*n1*n2+i] + 1000*f[i];
+            double phiTval   = phiT[i];
+            // double phiTval   = phi[1][(nt-1)*n1*n2+i];
+            double newrhovalue = rho1[(nt-1)*n1*n2+i] - tau[1] * (deltaErho - phiTval);
+            rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
+        }
 	}
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
@@ -816,18 +825,18 @@ public:
         //     }
         // }
 
-        for(int i=0;i<n2;++i){
-            for(int j=0;j<n1;++j){
-                double deltaE = calculate_deltaE1prime(rho[1], &phi[1][(nt-1)*n1*n2], f[1], i, j);
-                fftps2d->u[i*n1+j] = - deltaE;
-            }
-        }
+        // for(int i=0;i<n2;++i){
+        //     for(int j=0;j<n1;++j){
+        //         double deltaE = calculate_deltaE1prime(rho[1], &phi[1][(nt-1)*n1*n2], f[1], i, j);
+        //         fftps2d->u[i*n1+j] = - deltaE;
+        //     }
+        // }
 
-        fftps2d->perform_inverse_laplacian_phiT(0);
+        // fftps2d->perform_inverse_laplacian_phiT(0);
 
-        for(int i=0;i<n1*n2;++i){
-            phi[1][(nt-1)*n1*n2+i] += sigma[1] * fftps2d->u[i];
-        }
+        // for(int i=0;i<n1*n2;++i){
+        //     phi[1][(nt-1)*n1*n2+i] += sigma[1] * fftps2d->u[i];
+        // }
 
     int n, i, j, ind;
     double dtrho0, nablamx0, nablamy0, dtrho1, nablamx1, nablamy1, dtrho2, nablamx2, nablamy2, Deltarho0, Deltarho1, Deltarho2, convval, convval_gamma;
@@ -949,15 +958,6 @@ public:
         for(int i=0;i<n1*n2;++i){
             phiT[i] += sigmaval * fftps2d->workspace[i];
         }
-
-
-        // for(int i=0;i<n1*n2;++i){
-        //     double deltaErho = c1 * rho[1][(nt-1)*n1*n2+i] + f[1][i];
-        //     double phiTval   = phiT[i];
-        //     // double phiTval   = phi[1][(nt-1)*n1*n2+i];
-        //     double newrhovalue = rho[1][(nt-1)*n1*n2+i] - tau[1] * (deltaErho - phiTval);
-        //     rho[1][(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
-        // }
     }
 
     double calculate_energy_num(double* const rho[],double* const  mx[], double* const my[], const int num) const{

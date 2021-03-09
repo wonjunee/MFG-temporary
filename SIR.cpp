@@ -198,13 +198,8 @@ int main(int argc, char **argv)
     double c2=0.01;
 
     // coefficients for velocities
-
-    double alpha1 = 1.0;
-    double alpha2 = 10.0;
-    double alpha3 = 1.0;
-
+    double alphalist[4] = {10.0, 10.0, 1.0, 0.1};
     // coefficients for SIR model
-
     double var = 0.02;
 
 
@@ -242,7 +237,7 @@ int main(int argc, char **argv)
     // }
 
     // initialize the method
-    Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist, var);
+    Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alphalist, Clist, var);
     // SIR_model method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist, var);
 
     // coefficients for SIR system

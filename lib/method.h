@@ -113,7 +113,7 @@ public:
     Method(int n1, int n2, int nt, double dx, double dy, double dt, 
            double tau, double sigma, int max_iteration, double tolerance, 
            double c0, double c1, double c2, 
-           double alpha1, double alpha2, double alpha3,
+           double alphalist[4],
            double* etalist, double var){
 
         this->n1=n1;
@@ -146,11 +146,16 @@ public:
         this->etalist = etalist; // this contains the eta values for viscosity terms
         this->var     = var;
 
-        alphalist = new double[4];
-        alphalist[0] = alpha1;
-        alphalist[1] = alpha2;
-        alphalist[2] = alpha3;
-        alphalist[3] = alpha1*0.5;
+        this->alphalist = new double[4];
+        this->alphalist[0] = alphalist[0];
+        this->alphalist[1] = alphalist[1];
+        this->alphalist[2] = alphalist[2];
+        this->alphalist[3] = alphalist[3];
+
+        printf("Alpha values\n");
+        for(int k=0;k<4;++k){
+            printf("k: %d alpha: %f\n", k, this->alphalist[k]);
+        }
 
         karr = new double[4];
         karr[0] = 1e-2;
@@ -182,9 +187,9 @@ public:
 
 
         // Vaccine efficiency, i.e. the rate people can be vaccinated
-        v_eff  = 0.2;
+        v_eff  = 0.8;
         // Vaccine rate, i.e. the number of vaccines the doctors can use per day.
-        v_rate = 0.2;
+        v_rate = 0.8;
 
 
         M0 = 0.5;
@@ -281,15 +286,11 @@ public:
 
                     setup_indices(im,ip,jm,jp,i,j);
 
-                    // if(j==n1-1)     nablaxphi = (phi[n*n1*n2+i*n1+j]-phi[n*n1*n2+i*n1+j-1])/(2.0*dx);
-                    // else if(j==0)   nablaxphi = (phi[n*n1*n2+i*n1+j+1]-phi[n*n1*n2+i*n1+j])/(2.0*dx);
-                    // else            nablaxphi = (phi[n*n1*n2+i*n1+j+1]-phi[n*n1*n2+i*n1+j-1])/(2.0*dx);
-                    // if(i==n2-1)     nablayphi = (phi[n*n1*n2+(i)*n1+j]-phi[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
-                    // else if(i==0)   nablayphi = (phi[n*n1*n2+(i+1)*n1+j]-phi[n*n1*n2+(i)*n1+j])/(2.0*dy);
-                    // else            nablayphi = (phi[n*n1*n2+(i+1)*n1+j]-phi[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
+                    nablaxphi = 0.5*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+jm]);
+                    nablayphi = 0.5*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+im*n1+j]);
 
-                    nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+j]);
-                    nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+i*n1+j]);
+                    // nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+j]);
+                    // nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+i*n1+j]);
                     
                     double rhovalx=rho[n*n1*n2+i*n1+j];
                     double rhovaly=rho[n*n1*n2+i*n1+j];
@@ -386,7 +387,9 @@ public:
 		double tauval = tau[0];
 		double betaval  = beta;
 
-		for(int n=0;n<nt;++n){
+        memcpy(&rho0[0], rho0tmps[0], n1*n2*sizeof(double));
+
+		for(int n=1;n<nt;++n){
 
             // calculate convolution
             fftps2d->perform_convolution(&rho1[n*n1*n2],var);
@@ -434,7 +437,9 @@ public:
 
     	double tauval = tau[1];
 
-        for(int n=0;n<nt;++n){
+        memcpy(&rho1[0], rho0tmps[1], n1*n2*sizeof(double));
+
+        for(int n=1;n<nt;++n){
 
         	double gammaval = gamma;
         	double betaval  = beta;
@@ -489,7 +494,9 @@ public:
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
 
-        for(int n=0;n<nt;++n){
+        memcpy(&rho2[0], rho0tmps[2], n1*n2*sizeof(double));
+
+        for(int n=1;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -522,7 +529,9 @@ public:
 
         double const_reg = 0.01;
 
-        for(int n=0;n<nt;++n){
+        memcpy(&rho3[0], rho0tmps[3], n1*n2*sizeof(double));
+
+        for(int n=1;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -558,61 +567,24 @@ public:
                 }
             }
         }
-
-        // // forcing the mass to be decreasing over time
-        // double total_mass = 0; // total mass in the beginning (all the mass should be smaller than this)
-        // for(int i=0;i<n1*n2;++i) total_mass += rho3[i];
-
-        // double previous_sub_total_mass = total_mass;
-        // for(int n=1;n<nt;++n){
-        //     double sub_total_mass = 0;
-        //     for(int i=0;i<n1*n2;++i){
-        //         sub_total_mass += rho3[n*n1*n2+i];
-        //     }
-        //     double rate =  sub_total_mass / previous_sub_total_mass;
-        //     if(rate > 1.0){
-        //         for(int i=0;i<n1*n2;++i){
-        //             rho3[n*n1*n2+i] *= 1.0 / rate;
-        //         }
-        //     }else{
-        //         previous_sub_total_mass = sub_total_mass;    
-        //     }
-        // }
     }
 
     double calculate_grad_mx(const double* mxTmp, int n, int i, int j){
-        double mxval;
-
-        // if(j==0){
-        //     mxval = (mxTmp[n*n1*n2+i*n1+j+1])/(2.0*dx);
-        // }else if(j==n1-1){
-        //     mxval = (-mxTmp[n*n1*n2+i*n1+j-1])/(2.0*dx);
-        // }else{
-        //     mxval = (mxTmp[n*n1*n2+i*n1+j+1]-mxTmp[n*n1*n2+i*n1+j-1])/(2.0*dx);
-        // }
-
-        int im,ip,jm,jp;
+        double mxval; int im,ip,jm,jp;
         setup_indices(im,ip,jm,jp,i,j);
 
-        mxval = n1*(mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+jm]);
+        mxval = 0.5*n1*(mxTmp[n*n1*n2+i*n1+jp]-mxTmp[n*n1*n2+i*n1+jm]);
+        // mxval = n1*(mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+jm]);
 
         return mxval;
     }
 
     double calculate_grad_my(const double* myTmp, int n, int i, int j){
-        double myval;
-
-        // if(i==0){
-        //     myval = (myTmp[n*n1*n2+(i+1)*n1+j])/(2.0*dy);
-        // }else if(i==n2-1){
-        //     myval = (-myTmp[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
-        // }else{
-        //     myval = (myTmp[n*n1*n2+(i+1)*n1+j]-myTmp[n*n1*n2+(i-1)*n1+j])/(2.0*dy);
-        // }
-
-        int im,ip,jm,jp;
+        double myval; int im,ip,jm,jp;
         setup_indices(im,ip,jm,jp,i,j);
-        myval = n2*(myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+im*n1+j]);
+
+        myval = 0.5*n2*(myTmp[n*n1*n2+ip*n1+j]-myTmp[n*n1*n2+im*n1+j]);        
+        // myval = n2*(myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+im*n1+j]);
 
         return myval;
     }
@@ -625,7 +597,7 @@ public:
     	if(n==nt-1){
             dtrho=0;
         }else{
-            dtrho=1.0/dt*(rho[(n+1)*n1*n2+i*n1+j]-rho[(n)*n1*n2+i*n1+j]); 
+            dtrho=1.0*nt*(rho[(n+1)*n1*n2+i*n1+j]-rho[(n)*n1*n2+i*n1+j]); 
         }
         return dtrho;
     }
@@ -736,6 +708,9 @@ public:
                 ind = n*n1*n2+i*n1+j;
                 fftps[1]->u[ind] -= calculate_deltaE1prime(&phi[1][n*n1*n2], f[1], i, j) * nt;
                 fftps[1]->u[ind] += rho[1][ind] * nt;
+
+                // fftps[0]->u[ind] -= calculate_deltaE1prime(&phi[0][n*n1*n2], f[0], i, j) * nt;
+                // fftps[0]->u[ind] += rho[0][ind] * nt;
             }
         }
 
@@ -908,16 +883,16 @@ public:
             int skip2 = 100;
 
             update_rho0(rho[0],rhotmps[1],rhotmps[2],rhotmps[3],mx[0],my[0],f[0]);
-            fftps[0]->solve_heat_equation_with_bdry(rho[0], rho0tmps[0], 5e-5);
+            // fftps[0]->solve_heat_equation_with_bdry(rho[0], rho0tmps[0], 1e-5);
             update_m(mx[0],my[0],rho[0],phi[0],0);    
             update_rho1(rhotmps[0],rho[1],rhotmps[2],mx[1],my[1],f[1]);
-            fftps[0]->solve_heat_equation_with_bdry(rho[1], rho0tmps[1], 5e-5);
+            // fftps[0]->solve_heat_equation_with_bdry(rho[1], rho0tmps[1], 1e-5);
             update_m(mx[1],my[1],rho[1],phi[1],1);
             update_rho2(rhotmps[0],rhotmps[1],rho[2],mx[2],my[2],f[2]);
-            fftps[0]->solve_heat_equation_with_bdry(rho[2], rho0tmps[2], 5e-5);
+            // fftps[0]->solve_heat_equation_with_bdry(rho[2], rho0tmps[2], 1e-5);
             update_m(mx[2],my[2],rho[2],phi[2],2);
             update_rho3(rhotmps[0],rhotmps[1],rhotmps[2],rho[3],mx[3],my[3],f[3]);
-            fftps[0]->solve_heat_equation_with_bdry(rho[3], rho0tmps[3], 5e-5);
+            // fftps[0]->solve_heat_equation_with_bdry(rho[3], rho0tmps[3], 1e-5);
             update_m(mx[3],my[3],rho[3],phi[3],3);        
 
             // CALCULATE ENERGY
@@ -939,6 +914,15 @@ public:
                 create_csv_file(rho[1],"./data/rho1.csv",n1,n2,nt);
                 create_csv_file(rho[2],"./data/rho2.csv",n1,n2,nt);
                 create_csv_file(rho[3],"./data/rho3.csv",n1,n2,nt);
+
+                for(int k=0;k<4;++k){
+                    double s = 0, s1 = 0;
+                    for(int i=0;i<n1*n2;++i){
+                        s += rho0tmps[k][i];
+                        s1+= rho[k][i];
+                    }
+                    printf("k: %d s: %f s: %f\n", k, s, s1);
+                }
             }
             if((iterPDHG>20 ) && (fabs(dual_gap)<tolerance)) break;
         }

@@ -46,7 +46,7 @@ public:
 	            /*
 	            	Exp1
 	            */
-	            rho[i*n1+j] = 0.6 * exp(-20*pow(x-0.7,2)-20*pow(y-0.7,2)) + base;
+	            rho[i*n1+j] = 0.5 * exp(-20*pow(x-0.7,2)-20*pow(y-0.7,2)) + base;
 
 
 	            /*
@@ -105,7 +105,7 @@ public:
 	            // }
 
 	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
-	            rho[i*n1+j] = 0.3 * exp(-35*pow(x-0.7,2)-35*pow(y-0.7,2)) + base;
+	            rho[i*n1+j] = 0.5 * exp(-35*pow(x-0.7,2)-35*pow(y-0.7,2)) + base;
 
 	            /* exp1 */
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
@@ -177,7 +177,7 @@ public:
 	        for(int j=0;j<n1;++j){
 	        	double x = (j+0.5)/n1;
 	        	double y = (i+0.5)/n2;
-	        	rho[i*n1+j] = 0.3 * exp(-50*pow(x-0.3,2)-50*pow(y-0.3,2)) + base;
+	        	rho[i*n1+j] = fmax(0, 0.7 * exp(-50*pow(x-0.3,2)-50*pow(y-0.3,2)) - 0.05) + base;
 	        }
 	    }
 

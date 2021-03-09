@@ -290,19 +290,7 @@ public:
 		}
 
 		fftw_execute(planIn);
-
-		for(int i=0;i<n2;++i){
-			for(int j=0;j<n1;++j){
-				double x = (1.0*j)/n1;
-				double y = (1.0*i)/n2;
-				workspace[i*n1+j] *= exp(-kernel[i*n1+j]*var*var);
-			}
-		}
-
-		for(int i=0;i<n1*n2;++i){
-			workspace[i] /= 4*n1*n2;
-		}
-
+		for(int i=0;i<n1*n2;++i) workspace[i] *= exp(-kernel[i]*var*var) / (4*n1*n2);
 		fftw_execute(planOut);
 	}
 

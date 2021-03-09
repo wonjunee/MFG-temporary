@@ -158,7 +158,7 @@ public:
 
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
-	            rho[i*n1+j] = 0.001;
+	            rho[i*n1+j] = 0;
 	        }
 	    }
 

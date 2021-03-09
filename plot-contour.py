@@ -184,10 +184,10 @@ def save_animation():
         vmax  = max(vmax0, vmax1, vmax2)
 
         # cax1.set_clim(0, vmax)
-        cax1.set_clim(0, vmax*0.3)
-        cax2.set_clim(0, vmax1*0.3)
+        cax1.set_clim(0, vmax0)
+        cax2.set_clim(0, vmax1)
         cax3.set_clim(0, vmax2)
-        cax4.set_clim(0, vmax3 * 0.3)
+        cax4.set_clim(0, vmax3*0.3)
 
         
 

@@ -206,10 +206,10 @@ public:
         }    
 
         for(int k=0;k<4;++k){
-            memset(mx, 0, n1*n2*nt*sizeof(double));
-            memset(my, 0, n1*n2*nt*sizeof(double));
-            memset(phi, 0, n1*n2*nt*sizeof(double));
-            memset(phitmps, 0, n1*n2*nt*sizeof(double));
+            memset(mx[k], 0, n1*n2*nt*sizeof(double));
+            memset(my[k], 0, n1*n2*nt*sizeof(double));
+            memset(phi[k], 0, n1*n2*nt*sizeof(double));
+            memset(phitmps[k], 0, n1*n2*nt*sizeof(double));
         }
 
         clock_t t;

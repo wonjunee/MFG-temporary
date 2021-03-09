@@ -76,8 +76,8 @@ public:
 		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
 		            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
 		            // double negativeLaplacian= xpart + ypart + eta * eta * ( xpart*xpart + ypart*ypart ) + tpart;
-		            double negativeLaplacian= eta * eta * ( xpart*xpart + ypart*ypart ) + tpart;
-		            kernel[n*n1*n2+i*n1+j]=negativeLaplacian;
+		            double negativeLaplacian = tpart;
+		            kernel[n*n1*n2+i*n1+j]   = negativeLaplacian;
 		        }
 		    }
 	    }
@@ -98,7 +98,7 @@ public:
 					double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
 		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
 
-		        	double val = cval*cval + (1 + 2*cval*eta) * (xpart + ypart) + kernel[n*n1*n2+i*n1+j];
+		        	double val = cval*cval + (1 + 2*cval*eta) * (xpart + ypart) + eta * eta * ( xpart*xpart + ypart*ypart ) + kernel[n*n1*n2+i*n1+j];
 					if(val==0){
 						workspace[n*n1*n2+i*n1+j]=0;	
 					}else{
@@ -162,6 +162,21 @@ public:
 
 		fftw_execute(planOut);
 	}
+
+    // function for general rho. Boundary for t=0 only
+    void solve_heat_equation_with_bdry(double* rho, double* bdry, double tau){
+        memcpy(workspace,rho,n1*n2*nt*sizeof(double));
+
+        // boundary
+        for(int i=0;i<n1*n2;++i) workspace[i]              += tau*nt*nt*bdry[i];
+        for(int i=0;i<n1*n2;++i) workspace[(nt-1)*n1*n2+i] += tau*nt*nt*rho[(nt-1)*n1*n2+i];
+
+        fftw_execute(planIn);
+        for(int i=0;i<n1*n2*nt;++i) workspace[i] /= 8.0*n1*n2*nt * (1 + tau * kernel[i]);
+        fftw_execute(planOut);
+
+        memcpy(rho,workspace,n1*n2*nt*sizeof(double));
+    }
 };
 
 
@@ -313,6 +328,29 @@ public:
 
 		fftw_execute(planOut);
 	}
+
+    void solve_heat_equation(double* rho, double tau){
+        memcpy(workspace,rho,n1*n2*sizeof(double));
+
+        fftw_execute(planIn);
+        
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                workspace[i*n1+j]*=exp(-2*tau*kernel[i*n1+j]);
+            }
+        }
+
+        for(int i=0;i<n1*n2;++i){
+            workspace[i]/=4.0*(n1)*(n2);
+        }
+
+        fftw_execute(planOut);
+
+        memcpy(rho,workspace,n1*n2*sizeof(double));
+    }
+
+
+
 };
 
 #endif

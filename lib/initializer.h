@@ -37,16 +37,16 @@ public:
 	            double x=1.0*(j+0.5)*dx;
 	            double y=1.0*(i+0.5)*dy;
 
-	            if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.3,2)){
-	                rho[i*n1+j] = 0.4;    
-	            }else{
-	                rho[i*n1+j] = 0;
-	            }
+	            // if(pow(x-0.7,2) + pow(y-0.7,2) < pow(0.2,2)){
+	            //     rho[i*n1+j] = 0.4;    
+	            // }else{
+	            //     rho[i*n1+j] = 0;
+	            // }
 
 	            /*
 	            	Exp1
 	            */
-	            // rho[i*n1+j] = 0.6 * exp(-10*pow(x-0.5,2)-10*pow(y-0.5,2)) + base;
+	            rho[i*n1+j] = 0.6 * exp(-20*pow(x-0.7,2)-20*pow(y-0.7,2)) + base;
 
 
 	            /*
@@ -98,14 +98,14 @@ public:
 	            double x=1.0*(j+0.5)*dx;
 	            double y=1.0*(i+0.5)*dy;
 
-	            if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)){
-	                rho[i*n1+j] = 0.4;    
-	            }else{
-	                rho[i*n1+j] = 0;
-	            }
+	            // if(pow(x-0.7,2) + pow(y-0.7,2) < pow(0.1,2)){
+	            //     rho[i*n1+j] = 0.4;    
+	            // }else{
+	            //     rho[i*n1+j] = 0;
+	            // }
 
 	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
-	            // rho[i*n1+j] = 0.3 * exp(-35*pow(x-0.5,2)-35*pow(y-0.5,2)) + base;
+	            rho[i*n1+j] = 0.3 * exp(-35*pow(x-0.7,2)-35*pow(y-0.7,2)) + base;
 
 	            /* exp1 */
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
@@ -158,7 +158,26 @@ public:
 
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
-	            rho[i*n1+j] = 0;
+	            rho[i*n1+j] = 0.001;
+	        }
+	    }
+
+	    for(int n=1;n<nt;++n){
+	        for(int i=0;i<n1*n2;++i){
+	            rho[n*n1*n2+i]=rho[i];
+	        }
+	    }
+	}
+
+
+	// density for vaccine
+	void intialize_rho3(double* rho){
+
+	    for(int i=0;i<n2;++i){
+	        for(int j=0;j<n1;++j){
+	        	double x = (j+0.5)/n1;
+	        	double y = (i+0.5)/n2;
+	        	rho[i*n1+j] = 0.3 * exp(-50*pow(x-0.3,2)-50*pow(y-0.3,2)) + base;
 	        }
 	    }
 

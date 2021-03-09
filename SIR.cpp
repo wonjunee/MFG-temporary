@@ -208,13 +208,13 @@ int main(int argc, char **argv)
     double var = 0.02;
 
 
-    double* rho[3];
+    double* rho[4];
 
-    for(int i=0;i<3;++i) rho[i] = new double[n1*n2*nt];
+    for(int i=0;i<4;++i) rho[i] = new double[n1*n2*nt];
 
-    double** f_arr = new double*[3]; // f is an obstacle
+    double** obstacles = new double*[3]; // f is an obstacle
 
-    for(int k=0;k<3;++k) f_arr[k] = new double[n1*n2];
+    for(int k=0;k<4;++k) obstacles[k] = new double[n1*n2];
 
     double Clist[] = {eta, eta, eta};  
 
@@ -227,28 +227,17 @@ int main(int argc, char **argv)
     init.intialize_rho0(rho[0]);
     init.intialize_rho1(rho[1]);
     init.intialize_rho2(rho[2]);
-    // init.renormalize_all(rho);
-    // init.intialize_f(f);
-    for(int k=0;k<3;++k) for(int i=0;i<n1*n2;++i) f_arr[k][i] = 0;
+    init.intialize_rho3(rho[3]);
 
-    for(int i=0;i<n2;++i){
-        for(int j=0;j<n1;++j){
-            double x = (j+0.5)/n1;
-            double y = (i+0.5)/n2;
+    for(int k=0;k<4;++k) for(int i=0;i<n1*n2;++i) obstacles[k][i] = 0;
 
-            // f_arr[1][i*n1+j] = 1 * (pow(x-0.9,2) + pow(y-0.9,2));
-
-            // if(pow(x-0.5,2) + pow(y-0.5,2) < pow(0.2,2)) f_arr[1][i*n1+j] = 1; else f_arr[1][i*n1+j] = 0;
-            if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) f_arr[1][i*n1+j]= 1;
-        }
-    }
 
     // for(int i=0;i<n2;++i){
     //     for(int j=0;j<n1;++j){
     //         double x = (j+0.5)/n1;
     //         double y = (i+0.5)/n2;
 
-    //         f_arr[1][i*n1+j] = 10 * ((x-0.9)*(x-0.9) + (y-0.9)*(y-0.9));
+    //         obstacles[1][i*n1+j] = 10 * ((x-0.9)*(x-0.9) + (y-0.9)*(y-0.9));
     //     }
     // }
 
@@ -285,15 +274,15 @@ int main(int argc, char **argv)
     clock_t t;
     t = clock();
 
-    method.run(rho,f_arr,skip);   
+    method.run(rho,obstacles,skip);   
 
     t = clock() - t;
 
     printf ("CPU time for Iterations: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
-    for(int k=0;k<3;++k){
+    for(int k=0;k<4;++k){
         delete[] rho[k];
-        delete[] f_arr[k];
+        delete[] obstacles[k];
     }
-    delete[] f_arr;
+    delete[] obstacles;
 }

@@ -50,11 +50,6 @@ public:
 
     double* convarr;
 
-    double* phiT;
-   	double* phiTtmp; 
-
-    double* xi;
-    double* xitmp;
     double TOTAL_SUM;
 
     double* karr;
@@ -163,12 +158,6 @@ public:
         karr[2] = 1e-2;
         karr[3] = 1e-2;
 
-        xi    = new double[nt];
-        xitmp = new double[nt];
-
-        phiT     = new double[n1*n2];
-        phiTtmp  = new double[n1*n2];
-
         convarr  = new double[n1*n2];
 
         // factory is a function in space and time that represents the location of factories and the vaccines produced in factories.
@@ -217,12 +206,10 @@ public:
         }    
 
         for(int k=0;k<4;++k){
-        	for(int i=0;i<n1*n2*nt;++i){
-        		mx[k][i]      = 0;
-	            my[k][i]      = 0;
-	            phi[k][i]     = 0;
-	            phitmps[k][i] = 0;
-        	}
+            memset(mx, 0, n1*n2*nt*sizeof(double));
+            memset(my, 0, n1*n2*nt*sizeof(double));
+            memset(phi, 0, n1*n2*nt*sizeof(double));
+            memset(phitmps, 0, n1*n2*nt*sizeof(double));
         }
 
         clock_t t;
@@ -252,10 +239,6 @@ public:
             delete fftps[k];
         }
         delete[] alphalist;
-        delete[] xi;
-        delete[] xitmp;
-        delete[] phiT;
-        delete[] phiTtmp;
         delete[] karr;
 
         delete[] tau;
@@ -425,7 +408,7 @@ public:
                     double convval  =  convarr[i*n1+j];
                     double aval = 1.0/(tauval*karr[0]+1) * 
                                 (
-                                    tauval * (Dtphi + etalist[0]*Deltaphi + xi[n] + karr[0]*rho1[ind] + karr[0]*rho2[ind]) 
+                                    tauval * (Dtphi + etalist[0]*Deltaphi + karr[0]*rho1[ind] + karr[0]*rho2[ind]) 
                                     - rho0[ind] 
                                     + tauval * (
                                                 betaval*convval*(phi[1][ind] - phi[0][ind])
@@ -479,23 +462,12 @@ public:
                     double convval4 = (phi[2][ind] - phi[1][ind]);
 
                     double newrhovalue = 0;
-                    // double newrhovalue=cubic_solve(tau[1]*Dtphi + tau[1]*etalist[1]*Deltaphi - rho1[ind] + tau[1]*beta*rho0[ind]*(phi[1][ind]-phi[0][ind]) + tau[1]*gamma*(phi[2][ind] - phi[1][ind]), 0, -0.5/h*tau[1]*alphalist[1]*mvalue*mvalue);
-
                     double aval=0,cval=0;
-
-                        // aval = 1.0/(tauval*karr[1]+1) * 
-                        //         ( 
-                        //             tauval * (Dtphi + etalist[1]*Deltaphi + xi[n] + karr[0]*rho0[ind] + karr[0]*rho2[ind]) 
-                        //             - rho1[ind] 
-                        //             + tauval*betaval*convval3
-                        //             + tauval*gammaval * (phi[2][ind] - phi[1][ind]) 
-                        //         );
-                        // cval = -0.5/h*tauval/(tauval*karr[1]+1)*alphalist[1]*mvalue*mvalue;
 
                         aval = 1.0/(tauval*karr[1]+1) * 
                                 ( 
                                     tauval * (
-                                        Dtphi + etalist[1]*Deltaphi + xi[n] + karr[0]*rho0[ind] + karr[0]*rho2[ind]
+                                        Dtphi + etalist[1]*Deltaphi + karr[0]*rho0[ind] + karr[0]*rho2[ind]
                                         + betaval  * convval3 + gammaval * convval4
                                              )
                                     - rho1[ind] 
@@ -513,15 +485,6 @@ public:
             }
             fftps2d->solve_heat_equation(&rho1[n*n1*n2], etalist[1]);
         }
-
-
-        // for(int i=0;i<n1*n2;++i){
-        //     double deltaErho = c1 * rho1[(nt-1)*n1*n2+i] + 1000*f[i];
-        //     double phiTval   = phiT[i];
-        //     // double phiTval   = phi[1][(nt-1)*n1*n2+i];
-        //     double newrhovalue = rho1[(nt-1)*n1*n2+i] - tau[1] * (deltaErho - phiTval);
-        //     rho1[(nt-1)*n1*n2+i] =  fmax(0, newrhovalue);
-        // }
 	}
 
     void update_rho2(const double* rho0, const double* rho1, double* rho2,const double* mx,const double* my,const double* f){
@@ -793,36 +756,6 @@ public:
 
     }
 
-    void update_xi(double* const rho[]){
-    	for(int n=1;n<nt;++n){
-    		double rho_sum = 0;
-    		for(int k=0;k<4;++k){
-	    		for(int i=0;i<n1*n2;++i){
-	    			rho_sum += rho[k][n*n1*n2+i];
-	    		}
-	    	}
-	    	xi[n] += sigma[0] * (rho_sum/(n1*n2) - TOTAL_SUM);
-    	}
-    }
-
-    void update_phiT(double * const rho[], double* const f[]){
-
-    	double sigmaval = sigma[1];
-
-        for(int i=0;i<n2;++i){
-            for(int j=0;j<n1;++j){
-                double deltaE = calculate_deltaE1prime(phiT, f[1], i, j);
-                fftps2d->u[i*n1+j] = - deltaE;
-            }
-        }
-
-        fftps2d->perform_inverse_laplacian_phiT(0);
-
-        for(int i=0;i<n1*n2;++i){
-            phiT[i] += sigmaval * fftps2d->workspace[i];
-        }
-    }
-
     double calculate_energy_num(double* const rho[],double* const  mx[], double* const my[], const int num) const{
         double sum1=0;
 
@@ -941,10 +874,6 @@ public:
 	    	}	
     	}
     	TOTAL_SUM /= (n1*n2);
-    	for(int n=0;n<nt;++n){
-    		xi[n] = 0;
-    	}
-
         previous_energy=1;
         previous_dual=1;
         double error=1, dual_gap=1, energy=1, dual=0, sanity_value=1;
@@ -990,19 +919,8 @@ public:
             update_rho3(rhotmps[0],rhotmps[1],rhotmps[2],rho[3],mx[3],my[3],f[3]);
             fftps[0]->solve_heat_equation_with_bdry(rho[3], rho0tmps[3], 5e-5);
             update_m(mx[3],my[3],rho[3],phi[3],3);        
-            
-            /*
-                UPDATE PSI
-            */
-            memcpy(phiTtmp, phiT, n1*n2*sizeof(double));
-            update_phiT(rho,f);
-            for(int i=0;i<n1*n2;++i){
-            	phiT[i] = 2*phiT[i] - phiTtmp[i];
-            }
 
-            /*
-                CALCULATE ENERGY
-            */
+            // CALCULATE ENERGY
             // energy=calculate_energy(rho,f);
             error=fabs((energy-previous_energy)/previous_energy);
             previous_energy=energy;
@@ -1023,8 +941,6 @@ public:
                 create_csv_file(rho[3],"./data/rho3.csv",n1,n2,nt);
             }
             if((iterPDHG>20 ) && (fabs(dual_gap)<tolerance)) break;
-
-            // if(fabs(dual_gap)<1e-2 && sanity_value<0.5) break;
         }
 
         cout<<"The method is done!!"<<endl;

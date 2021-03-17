@@ -13,45 +13,29 @@ public:
     double *workspace;
     double *u;
     double *kernel;
-    double *tridiagonalWorkspace;
 
     int n1;
     int n2;
     int nt;
-    double dx;
-    double dy;
-    double dt;
-
     double eta;
 
     poisson_solver(){
-    	workspace=NULL; u=NULL; kernel=NULL; tridiagonalWorkspace=NULL;
+    	workspace=NULL; u=NULL; kernel=NULL;
     }
-    poisson_solver(int n1, int n2, int nt, double dx, double dy, double dt, double eta=1) {
+    poisson_solver(int n1, int n2, int nt, double eta=1) {
     	this->n1=n1;
     	this->n2=n2;
     	this->nt=nt;
-    	this->dx=dx;
-    	this->dy=dy;
-    	this->dt=dt;
 
     	this->eta=eta;
 
         workspace =(double*) fftw_malloc(n1*n2*nt*sizeof(double));
 
-		// planIn = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT10,FFTW_REDFT10, FFTW_MEASURE);
-		// planOut = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT01,FFTW_REDFT01, FFTW_MEASURE);
-
-		planIn=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace,
-                                 FFTW_RODFT10, FFTW_REDFT10, FFTW_REDFT10,
-                                 FFTW_MEASURE);
-    	planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace,
-                                  FFTW_RODFT01, FFTW_REDFT01, FFTW_REDFT01,
-                                  FFTW_MEASURE);
+		planIn =fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
+    	planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
 
 		u=new double[n1*n2*nt];
         kernel=new double[n1*n2*nt];
-        tridiagonalWorkspace=new double[n1*n2*nt];
 
         create_negative_laplacian_kernel_2d();
     }
@@ -59,7 +43,6 @@ public:
     ~poisson_solver(){
 		delete[] u;
 	    delete[] kernel;
-	    delete[] tridiagonalWorkspace;
 	    fftw_free(workspace);
 	    fftw_destroy_plan(planIn);
 	    fftw_destroy_plan(planOut);
@@ -72,10 +55,8 @@ public:
 		        for(int j=0;j<n1;j++){
 		            double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
 		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-		        	// double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
-		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
-		            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
-		            // double negativeLaplacian= xpart + ypart + eta * eta * ( xpart*xpart + ypart*ypart ) + tpart;
+		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
+		        	// double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
 		            double negativeLaplacian = tpart;
 		            kernel[n*n1*n2+i*n1+j]   = negativeLaplacian;
 		        }
@@ -162,19 +143,76 @@ public:
 
 		fftw_execute(planOut);
 	}
+};
 
+
+class poisson_solver_DST{
+public:
+    fftw_plan planIn;
+    fftw_plan planOut;
+    double *workspace;
+    double *u;
+    double *kernel;
+
+    int n1;
+    int n2;
+    int nt;
+    double eta;
+
+    poisson_solver_DST(){
+        workspace=NULL; u=NULL; kernel=NULL;
+    }
+    poisson_solver_DST(int n1, int n2, int nt, double eta=1) {
+        this->n1=n1;
+        this->n2=n2;
+        this->nt=nt;
+
+        this->eta=eta;
+
+        workspace =(double*) fftw_malloc(n1*n2*nt*sizeof(double));
+
+        planIn =fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_RODFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
+        planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_RODFT01, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
+
+        u=new double[n1*n2*nt];
+        kernel=new double[n1*n2*nt];
+
+        create_negative_laplacian_kernel_3d();
+    }
+
+    ~poisson_solver_DST(){
+        delete[] u;
+        delete[] kernel;
+        fftw_free(workspace);
+        fftw_destroy_plan(planIn);
+        fftw_destroy_plan(planOut);
+    }
+
+    void create_negative_laplacian_kernel_3d(){
+        
+        for(int n=0;n<nt;++n){
+            for(int i=0;i<n2;i++){
+                for(int j=0;j<n1;j++){
+                    double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
+                    double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
+                    // double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
+                    double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
+                    double negativeLaplacian = tpart;
+                    kernel[n*n1*n2+i*n1+j]   = negativeLaplacian;
+                }
+            }
+        }
+            
+    }
     // function for general rho. Boundary for t=0 only
     void solve_heat_equation_with_bdry(double* rho, double* bdry, double tau){
         memcpy(workspace,rho,n1*n2*nt*sizeof(double));
-
         // boundary
-        for(int i=0;i<n1*n2;++i) workspace[i]              += tau*nt*nt*bdry[i];
-        for(int i=0;i<n1*n2;++i) workspace[(nt-1)*n1*n2+i] += tau*nt*nt*rho[(nt-1)*n1*n2+i];
-
+        for(int i=0;i<n1*n2;++i) workspace[i]              += 2*tau*nt*nt*bdry[i];
+        for(int i=0;i<n1*n2;++i) workspace[(nt-1)*n1*n2+i] += 2*tau*nt*nt*rho[(nt-1)*n1*n2+i];
         fftw_execute(planIn);
         for(int i=0;i<n1*n2*nt;++i) workspace[i] /= 8.0*n1*n2*nt * (1 + tau * kernel[i]);
         fftw_execute(planOut);
-
         memcpy(rho,workspace,n1*n2*nt*sizeof(double));
     }
 };
@@ -190,19 +228,15 @@ public:
 
     int n1;
     int n2;
-    double dx;
-    double dy;
 
     double eta;
 
     poisson_solver_2d(){
     	workspace=NULL; u=NULL; kernel=NULL;
     }
-    poisson_solver_2d(int n1, int n2, double dx, double dy, double eta=1) {
+    poisson_solver_2d(int n1, int n2, double eta=1) {
     	this->n1=n1;
     	this->n2=n2;
-    	this->dx=dx;
-    	this->dy=dy;
 
     	this->eta=eta;
 
@@ -211,12 +245,8 @@ public:
 		// planIn = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT10,FFTW_REDFT10, FFTW_MEASURE);
 		// planOut = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT01,FFTW_REDFT01, FFTW_MEASURE);
 
-		planIn=fftw_plan_r2r_2d(n2, n1, workspace, workspace,
-                                 FFTW_REDFT10, FFTW_REDFT10,
-                                 FFTW_MEASURE);
-    	planOut=fftw_plan_r2r_2d(n2, n1, workspace, workspace,
-                                 FFTW_REDFT01, FFTW_REDFT01,
-                                 FFTW_MEASURE);
+		planIn =fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
+    	planOut=fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
 
 		u=new double[n1*n2];
         kernel=new double[n1*n2];

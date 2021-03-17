@@ -24,7 +24,7 @@ with open("{}/parameters.csv".format(directory)) as F:
         gamma = float(i[7])
         var   = float(i[8])
 
-var = 0.02
+# var = 0.02
 #--------------------------------------------------
 #   Getting Rho Data
 #--------------------------------------------------
@@ -123,7 +123,8 @@ def save_plot(visual=True, total=False):
     ax.set_xlabel("t")
     # ax.set_ylim(200,700)
 
-    plt.legend(loc='lower left', framealpha=0.5)
+    plt.legend(loc='upper right', framealpha=0.5)
+    plt.grid()
     plt.savefig("figures/SIR-plot.eps")
     if(visual==True):
         plt.show()
@@ -151,28 +152,29 @@ def save_animation():
     # First set up the figure, the axis, and the plot element we want to animate
     num = 4; w = 16
     
-    fig, ax = plt.subplots(1,num,figsize=(w,4))
+    fig, ax = plt.subplots(1,num,figsize=(w,6))
     fig.subplots_adjust(bottom=0, top=0.8, right=1, left=0, hspace=0.1, wspace=0)
 
-    cax1 = ax[0].imshow(rho0[0], cmap='inferno')
-    cax2 = ax[1].imshow(rho1[0], cmap='inferno')
-    cax3 = ax[2].imshow(rho2[0], cmap='inferno')
-    cax4 = ax[3].imshow(rho3[0], cmap='inferno')
+    cax0 = ax[0].imshow(rho0[0], cmap='inferno', origin='lower')
+    cax1 = ax[1].imshow(rho1[0], cmap='inferno', origin='lower')
+    cax2 = ax[2].imshow(rho2[0], cmap='inferno', origin='lower')
+    cax3 = ax[3].imshow(rho3[0], cmap='inferno', origin='lower')
 
     ax[0].set_axis_off()
     ax[1].set_axis_off()
     ax[2].set_axis_off()
     ax[3].set_axis_off()
+    plt.tight_layout()
 
     vmax = np.max(rho1)
 
     # animation function.  This is called sequentially
     def animate(n):
         # fig.clear()
-        cax1.set_array(np.flipud(rho0[n]))
-        cax2.set_array(np.flipud(rho1[n]))
-        cax3.set_array(np.flipud(rho2[n]))
-        cax4.set_array(np.flipud(rho3[n]))
+        cax0.set_array(rho0[np.maximum(0,n-1)])
+        cax1.set_array(rho1[np.maximum(0,n-1)])
+        cax2.set_array(rho2[np.maximum(0,n-1)])
+        cax3.set_array(rho3[np.maximum(0,n-1)])
         
         
         vmax0 = np.max(rho0)
@@ -183,26 +185,26 @@ def save_animation():
 
         vmax  = max(vmax0, vmax1, vmax2)
 
-        # cax1.set_clim(0, vmax)
-        cax1.set_clim(0, vmax0)
-        cax2.set_clim(0, vmax1)
-        cax3.set_clim(0, vmax2)
-        cax4.set_clim(0, vmax3*0.3)
+        # cax0.set_clim(0, vmax)
+        cax0.set_clim(0, vmax0)
+        cax1.set_clim(0, vmax1)
+        cax2.set_clim(0, vmax2)
+        cax3.set_clim(0, vmax3*0.1)
 
         
 
-        ax[0].set_title("S: {:.4f}".format(np.sum(rho0[n])/(n1*n2)))
-        ax[1].set_title("I: {:.4f}".format(np.sum(rho1[n])/(n1*n2)))
-        ax[2].set_title("R: {:.4f}".format(np.sum(rho2[n])/(n1*n2)))
-        ax[3].set_title("R: {:.4f}".format(np.sum(rho3[n])/(n1*n2)))
+        ax[0].set_title("Susceptible: {:.4f}".format(np.sum(rho0[np.maximum(0,n-1)])/(n1*n2)))
+        ax[1].set_title("Infected: {:.4f}".format(np.sum(rho1[np.maximum(0,n-1)])/(n1*n2)))
+        ax[2].set_title("Recovered: {:.4f}".format(np.sum(rho2[np.maximum(0,n-1)])/(n1*n2)))
+        ax[3].set_title("Vaccine: {:.4f}".format(np.sum(rho3[np.maximum(0,n-1)])/(n1*n2)))
 
-        # cax1.set_clim(0, 10)
-        plt.suptitle("$\\beta$={:.2}, $\\gamma$={:.2}, $\\sigma$={:.3}\nt={:.2f}".format(beta,gamma,var,n/(nt-1)))
-        return cax1, 
+        # cax0.set_clim(0, 10)
+        plt.suptitle("$\\beta$={:.2}, $\\gamma$={:.2}, $\\sigma$={:.3}\nt={:.2f}".format(beta,gamma,var,n/nt))
+        return cax0, 
 
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate, 
-                                   frames=nt, interval=10, blit=True)
+                                   frames=nt+1, interval=10, blit=True)
 
     # save the animation as an mp4.  This requires ffmpeg or mencoder to be
     # installed.  The extra_args ensure that the x264 codec is used, so that

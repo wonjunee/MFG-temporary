@@ -187,71 +187,55 @@ int main(int argc, char **argv)
 
     double base=0;
 
-    double dx=1.0/n1;
-    double dy=1.0/n2;
-    double dt=1.0/nt;
-
-    // coefficients for the energy functions
-
-    double c0=0.001;
-    double c1=1.0;
-    double c2=0.01;
-
     // coefficients for velocities
-    double alphalist[4] = {10.0, 10.0, 1.0, 0.1};
+    double alphalist[4] = {10.0, 10.0, 1.0, 0.005};
     // coefficients for SIR model
-    double var = 0.02;
+    double var = 0.005;
 
 
     double* rho[4];
 
     for(int i=0;i<4;++i) rho[i] = new double[n1*n2*nt];
 
-    double** obstacles = new double*[3]; // f is an obstacle
+    double** obstacle = new double*[3]; // f is an obstacle
 
-    for(int k=0;k<4;++k) obstacles[k] = new double[n1*n2];
+    for(int k=0;k<4;++k) obstacle[k] = new double[n1*n2];
 
-    double Clist[] = {eta, eta, eta};  
+    double etalist[] = {eta, eta, eta};  
 
     /*
         Initialize rho0, rho1, rho2
     */
 
-    Initializer init(n1,n2,nt,dx,dy,dt,base);
+    Initializer init(n1,n2,nt,base);
 
     init.intialize_rho0(rho[0]);
     init.intialize_rho1(rho[1]);
     init.intialize_rho2(rho[2]);
     init.intialize_rho3(rho[3]);
 
-    for(int k=0;k<4;++k) for(int i=0;i<n1*n2;++i) obstacles[k][i] = 0;
+    for(int k=0;k<4;++k) for(int i=0;i<n1*n2;++i) obstacle[k][i] = 0;
 
-
-    // for(int i=0;i<n2;++i){
-    //     for(int j=0;j<n1;++j){
-    //         double x = (j+0.5)/n1;
-    //         double y = (i+0.5)/n2;
-
-    //         obstacles[1][i*n1+j] = 10 * ((x-0.9)*(x-0.9) + (y-0.9)*(y-0.9));
-    //     }
-    // }
+    for(int i=0;i<n2;++i){
+        for(int j=0;j<n1;++j){
+            double x = (j+0.5)/n1;
+            double y = (i+0.5)/n2;
+            if(x < 0.4 && fabs(y-0.55)<0.05) obstacle[3][i*n1+j] = 1;
+            if(x > 0.6 && fabs(y-0.55)<0.05) obstacle[3][i*n1+j] = 1;
+        }
+    }
 
     // initialize the method
-    Method method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alphalist, Clist, var);
-    // SIR_model method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, Clist, var);
+    Method method(n1, n2, nt, tau, sigma, max_iteration, tolerance, alphalist, etalist, var);
+    // SIR_model method(n1, n2, nt, dx, dy, dt, tau, sigma, max_iteration, tolerance, c0, c1, c2, alpha1, alpha2, alpha3, etalist, var);
 
     // coefficients for SIR system
-    method.h = 1;
-    method.m = 2;
     method.beta  = beta;
     method.gamma = gamma;
 
     cout<<"XXX G-Prox PDHG XXX"<<endl;
     cout<<endl;
     cout<<"n1 : "<<n1<<" n2 : "<<n2<<" nt : "<<nt<<" base : "<<base<<endl;
-    cout<<"dx : "<<scientific<<dx<<endl;
-    cout<<"dy : "<<scientific<<dy<<endl;
-    cout<<"dt : "<<scientific<<dt<<endl;
     cout<<fixed;
     cout<<"tau           : "<<tau<<endl;
     cout<<"sigma         : "<<sigma<<endl;
@@ -262,14 +246,14 @@ int main(int argc, char **argv)
     cout<<"gamma         : "<<scientific<<method.gamma<<endl;
     cout<<"var           : "<<scientific<<method.var<<endl;
 
-    create_csv_file_for_parameters(n1,n2,nt,c0,c1,c2,method.beta,method.gamma,var);
+    create_csv_file_for_parameters(n1,n2,nt,0,0,0,method.beta,method.gamma,var);
 
     cout<<"\nXXX Starting Iterations XXX"<<endl;
 
     clock_t t;
     t = clock();
 
-    method.run(rho,obstacles,skip);   
+    method.run(rho,obstacle,skip);   
 
     t = clock() - t;
 
@@ -277,7 +261,7 @@ int main(int argc, char **argv)
 
     for(int k=0;k<4;++k){
         delete[] rho[k];
-        delete[] obstacles[k];
+        delete[] obstacle[k];
     }
-    delete[] obstacles;
+    delete[] obstacle;
 }

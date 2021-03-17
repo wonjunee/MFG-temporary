@@ -9,21 +9,15 @@ public:
 	int n1;
 	int n2;
 	int nt;
-	double dx;
-	double dy;
-	double dt;
 
 	double base;
 
 	Initializer(){}
 
-	Initializer(int n1, int n2, int nt, double dx, double dy, double dt, double base=0){
+	Initializer(int n1, int n2, int nt, double base=0){
 		this->n1=n1;
 		this->n2=n2;
 		this->nt=nt;
-		this->dx=dx;
-		this->dy=dy;
-		this->dt=dt;
 		this->base=base;
 	}
 
@@ -34,8 +28,8 @@ public:
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
 
-	            double x=1.0*(j+0.5)*dx;
-	            double y=1.0*(i+0.5)*dy;
+	            double x=1.0*(j+0.5)/n1;
+	            double y=1.0*(i+0.5)/n2;
 
 	            // if(pow(x-0.7,2) + pow(y-0.7,2) < pow(0.2,2)){
 	            //     rho[i*n1+j] = 0.4;    
@@ -46,7 +40,8 @@ public:
 	            /*
 	            	Exp1
 	            */
-	            rho[i*n1+j] = 0.5 * exp(-20*pow(x-0.7,2)-20*pow(y-0.7,2)) + base;
+	            rho[i*n1+j] =  fmax(0, 0.6 * exp(-35*pow(x-0.8,2)-35*pow(y-0.7,2)) -0.15) + base;
+	            rho[i*n1+j] += fmax(0, 0.6 * exp(-35*pow(x-0.2,2)-35*pow(y-0.7,2)) -0.15) + base;
 
 
 	            /*
@@ -95,8 +90,8 @@ public:
 	    for(int i=0;i<n2;++i){
 	        for(int j=0;j<n1;++j){
 
-	            double x=1.0*(j+0.5)*dx;
-	            double y=1.0*(i+0.5)*dy;
+	            double x=1.0*(j+0.5)/n1;
+	            double y=1.0*(i+0.5)/n2;
 
 	            // if(pow(x-0.7,2) + pow(y-0.7,2) < pow(0.1,2)){
 	            //     rho[i*n1+j] = 0.4;    
@@ -105,7 +100,7 @@ public:
 	            // }
 
 	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
-	            rho[i*n1+j] = 0.5 * exp(-35*pow(x-0.7,2)-35*pow(y-0.7,2)) + base;
+	            rho[i*n1+j] = fmax(0, 0.6 * exp(-45*pow(x-0.7,2)-45*pow(y-0.7,2)) - 0.1) + base;
 
 	            /* exp1 */
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
@@ -177,7 +172,7 @@ public:
 	        for(int j=0;j<n1;++j){
 	        	double x = (j+0.5)/n1;
 	        	double y = (i+0.5)/n2;
-	        	rho[i*n1+j] = fmax(0, 0.7 * exp(-50*pow(x-0.3,2)-50*pow(y-0.3,2)) - 0.05) + base;
+	        	rho[i*n1+j] = fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.6) + base;
 	        }
 	    }
 

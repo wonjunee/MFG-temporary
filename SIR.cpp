@@ -162,6 +162,16 @@ public:
 
 }; // Method class
 
+void remove_mass_obstacle(double** rho,double* obstacle, int n1, int n2, int nt){
+    for(int n=0;n<nt;++n){
+        for(int i=0;i<n1*n2;++i){
+            if(obstacle[i] > 0){
+                for(int k=0;k<4;++k) rho[k][n*n1*n2+i] = 0;
+            }
+        }
+    }
+}
+
 int main(int argc, char **argv)
 {
 
@@ -197,10 +207,7 @@ int main(int argc, char **argv)
 
     for(int i=0;i<4;++i) rho[i] = new double[n1*n2*nt];
 
-    double** obstacle = new double*[3]; // f is an obstacle
-
-    for(int k=0;k<4;++k) obstacle[k] = new double[n1*n2];
-
+    double* obstacle = new double[n1*n2];
     double etalist[] = {eta, eta, eta};  
 
     /*
@@ -214,16 +221,21 @@ int main(int argc, char **argv)
     init.intialize_rho2(rho[2]);
     init.intialize_rho3(rho[3]);
 
-    for(int k=0;k<4;++k) for(int i=0;i<n1*n2;++i) obstacle[k][i] = 0;
+    for(int i=0;i<n1*n2;++i) obstacle[i] = 0;
 
     for(int i=0;i<n2;++i){
         for(int j=0;j<n1;++j){
             double x = (j+0.5)/n1;
             double y = (i+0.5)/n2;
-            if(x < 0.4 && fabs(y-0.55)<0.05) obstacle[3][i*n1+j] = 1;
-            if(x > 0.6 && fabs(y-0.55)<0.05) obstacle[3][i*n1+j] = 1;
+            if(x < 0.2 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
+            if(x > 0.8 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
+            if(x > 0.3 && x < 0.7 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
         }
     }
+
+    create_bin_file(obstacle, n1*n2, "./data/obstacle.csv");
+
+    remove_mass_obstacle(rho,obstacle,n1,n2,nt);
 
     // initialize the method
     Method method(n1, n2, nt, tau, sigma, max_iteration, tolerance, alphalist, etalist, var);
@@ -261,7 +273,6 @@ int main(int argc, char **argv)
 
     for(int k=0;k<4;++k){
         delete[] rho[k];
-        delete[] obstacle[k];
     }
     delete[] obstacle;
 }

@@ -4,6 +4,7 @@ import numpy as np
 import csv
 import dask.dataframe as dd
 import pandas as pd
+from numpy.ma import masked_array
 
 directory="./data"
 
@@ -30,15 +31,21 @@ with open("{}/parameters.csv".format(directory)) as F:
 #--------------------------------------------------
 
 def open_csv(filename,nt,n1,n2):
-    A=dd.read_csv(filename,header=None)
-    return np.array(A).reshape((nt,n2,n1))
+    A = np.fromfile(filename, dtype=np.float64)
+
+    # A=dd.read_csv(filename,header=None)
+    return A.reshape((nt,n2,n1))
+
+    
+
 
 
 rho0 = open_csv("{}/rho0.csv".format(directory),nt,n1,n2)
 rho1 = open_csv("{}/rho1.csv".format(directory),nt,n1,n2)
 rho2 = open_csv("{}/rho2.csv".format(directory),nt,n1,n2)
 rho3 = open_csv("{}/rho3.csv".format(directory),nt,n1,n2)
-
+obstacle = open_csv("{}/obstacle.csv".format(directory),1,n1,n2)
+mask_obstacle = masked_array(obstacle,obstacle==0)
 
 #--------------------------------------------------
 #   Create animation
@@ -166,37 +173,45 @@ def save_animation():
     ax[3].set_axis_off()
     plt.tight_layout()
 
-    vmax = np.max(rho1)
+    vmax0 = np.max(rho0)
+    vmax1 = np.max(rho1)
+    vmax2 = np.max(rho2)
+    vmax3 = np.max(rho3)
+    vmax  = max(vmax0, vmax1, vmax2)
+    obs_sum = np.sum(obstacle) * 100 / (n1*n2)
 
     # animation function.  This is called sequentially
     def animate(n):
         # fig.clear()
+        
+
+        rho0[np.maximum(0,n-1)][obstacle[0] > 0] = 100
+        rho1[np.maximum(0,n-1)][obstacle[0] > 0] = 100
+        rho2[np.maximum(0,n-1)][obstacle[0] > 0] = 100
+        rho3[np.maximum(0,n-1)][obstacle[0] > 0] = 100
         cax0.set_array(rho0[np.maximum(0,n-1)])
         cax1.set_array(rho1[np.maximum(0,n-1)])
         cax2.set_array(rho2[np.maximum(0,n-1)])
         cax3.set_array(rho3[np.maximum(0,n-1)])
-        
-        
-        vmax0 = np.max(rho0)
-        vmax1 = np.max(rho1)
-        vmax2 = np.max(rho2)
-        vmax3 = np.max(rho3)
 
 
-        vmax  = max(vmax0, vmax1, vmax2)
+        rho0sum = np.sum(rho0[np.maximum(0,n-1)])/(n1*n2) - obs_sum
+        rho1sum = np.sum(rho1[np.maximum(0,n-1)])/(n1*n2) - obs_sum
+        rho2sum = np.sum(rho2[np.maximum(0,n-1)])/(n1*n2) - obs_sum
+        rho3sum = np.sum(rho3[np.maximum(0,n-1)])/(n1*n2) - obs_sum
 
         # cax0.set_clim(0, vmax)
         cax0.set_clim(0, vmax0)
         cax1.set_clim(0, vmax1)
         cax2.set_clim(0, vmax2)
-        cax3.set_clim(0, vmax3*0.1)
+        cax3.set_clim(0, vmax3*0.5)
 
         
 
-        ax[0].set_title("Susceptible: {:.4f}".format(np.sum(rho0[np.maximum(0,n-1)])/(n1*n2)))
-        ax[1].set_title("Infected: {:.4f}".format(np.sum(rho1[np.maximum(0,n-1)])/(n1*n2)))
-        ax[2].set_title("Recovered: {:.4f}".format(np.sum(rho2[np.maximum(0,n-1)])/(n1*n2)))
-        ax[3].set_title("Vaccine: {:.4f}".format(np.sum(rho3[np.maximum(0,n-1)])/(n1*n2)))
+        ax[0].set_title("Susceptible: {:.4f}".format(rho0sum))
+        ax[1].set_title("Infected: {:.4f}".format(rho1sum))
+        ax[2].set_title("Recovered: {:.4f}".format(rho2sum))
+        ax[3].set_title("Vaccine: {:.4f}".format(rho3sum))
 
         # cax0.set_clim(0, 10)
         plt.suptitle("$\\beta$={:.2}, $\\gamma$={:.2}, $\\sigma$={:.3}\nt={:.2f}".format(beta,gamma,var,n/nt))

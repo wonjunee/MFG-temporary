@@ -151,8 +151,8 @@ public:
                 for(int j=0;j<n1;++j){
                     double x = (j+.5)/n1;
                     double y = (i+.5)/n2;
-                    // factory[n*n1*n2+i*n1+j] = fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.6);
-                    factory[n*n1*n2+i*n1+j] = 0;
+                    factory[n*n1*n2+i*n1+j] = fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.7);
+                    // factory[n*n1*n2+i*n1+j] = 0;
                 }
             }
         }
@@ -580,7 +580,7 @@ public:
                 fftps[1]->u[ind] -= calculate_deltaEprime(&phi[1][n*n1*n2], obstacle, 1.0, i, j) * nt;
                 fftps[1]->u[ind] += rho[1][ind] * nt;
 
-                fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 0.2, i, j) * nt;
+                fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 0.5, i, j) * nt;
                 fftps[3]->u[ind] += rho[3][ind] * nt;
             }
         }
@@ -589,7 +589,7 @@ public:
 
         fftps[0]->perform_inverse_laplacian(beta + v_eff, etalist[0]);
         fftps[1]->perform_inverse_laplacian(beta + gamma, etalist[1]);
-        fftps[2]->perform_inverse_laplacian(gamma+ v_rate, etalist[2]);
+        fftps[2]->perform_inverse_laplacian(0, etalist[2]);
         fftps[3]->perform_inverse_laplacian(v_rate, 0);
 
         for(int k=0;k<4;++k){

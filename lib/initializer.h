@@ -172,7 +172,7 @@ public:
 	        for(int j=0;j<n1;++j){
 	        	double x = (j+0.5)/n1;
 	        	double y = (i+0.5)/n2;
-	        	rho[i*n1+j] = fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.6) + base;
+	        	rho[i*n1+j] = 0*fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.6) + base;
 	        }
 	    }
 

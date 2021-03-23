@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     double base=0;
 
     // coefficients for velocities
-    double alphalist[4] = {10.0, 10.0, 1.0, 0.005};
+    double alphalist[4] = {10.0, 10.0, 1.0, 0.001};
     // coefficients for SIR model
     double var = 0.005;
 

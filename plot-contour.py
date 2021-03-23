@@ -204,7 +204,7 @@ def save_animation():
         cax0.set_clim(0, vmax0)
         cax1.set_clim(0, vmax1)
         cax2.set_clim(0, vmax2)
-        cax3.set_clim(0, vmax3*0.5)
+        cax3.set_clim(0, vmax3*0.01)
 
         
 

@@ -13,6 +13,8 @@
 #include "helper.h"
 #include "initializer.h"
 
+const double LARGE_NUMBER = 99999999999;    
+
 class Method{
 public:
     int n1;
@@ -73,14 +75,8 @@ public:
     double var;
     double var_gamma;
 
-    // function pointers for terminal functions
-    // double (*E0)(double);
-    // double (*E1)(double);
-    // double (*E2)(double);
-
-    // double (*deltaE0)(const double* rho);
-    // double (*deltaE1)(const double* rho);
-    // double (*deltaE2)(const double* rho);
+    double* psi;
+    double* factory_area;
 
     // ------------------------
 
@@ -151,7 +147,7 @@ public:
                 for(int j=0;j<n1;++j){
                     double x = (j+.5)/n1;
                     double y = (i+.5)/n2;
-                    factory[n*n1*n2+i*n1+j] = fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.7);
+                    factory[n*n1*n2+i*n1+j] = 0*fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.7);
                     // factory[n*n1*n2+i*n1+j] = 0;
                 }
             }
@@ -159,9 +155,9 @@ public:
 
 
         // Vaccine efficiency, i.e. the rate people can be vaccinated
-        v_eff  = 0.5;
+        v_eff  = 0.9;
         // Vaccine rate, i.e. the number of vaccines the doctors can use per day.
-        v_rate = 0.5;
+        v_rate = 0.2;
 
         var_gamma = 0.01; // DON'T TOUCH THIS. This one is for regularization.
 
@@ -195,6 +191,29 @@ public:
 
         t = clock() - t;
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
+
+
+
+
+        psi = new double[n1*n2*nt];
+        factory_area = new double[n1*n2];
+
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                double x=(j+.5)/n1;
+                double y=(i+.5)/n2;
+                double vx = x - 0.3;
+                double vy = y - 0.3;
+                double r= 0.075;
+                if(vx*vx + vy*vy < r*r){
+                    factory_area[i*n1+j] = 0;
+                // }else if(fabs(x-0.8)<0.05 && fabs(y-0.2)<0.05){
+                //     factory_area[i*n1+j] = 0;
+                }else{
+                    factory_area[i*n1+j] = LARGE_NUMBER;
+                }
+            }
+        }
     }
 
 
@@ -563,7 +582,12 @@ public:
                     fftps[0]->u[ind]  = - (dtrho0 + nablamx0 + nablamy0 + beta*rho[0][ind]*convval + v_eff*rho[0][ind]*rho[3][ind]  - etalist[0]*Deltarho0 ); 
                     fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*rho[0][ind]*convval + gamma*convval_gamma            - etalist[1]*Deltarho1 );
                     fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*convval_gamma      - v_eff*rho[0][ind]*rho[3][ind]  - etalist[2]*Deltarho2 ); 
-                    fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3 - factory[ind]             + v_rate*rho[0][ind]*rho[3][ind] - etalist[3]*Deltarho3*0 ); 
+                    // fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3 - factory[ind]             + v_rate*rho[0][ind]*rho[3][ind] - etalist[3]*Deltarho3*0 ); 
+
+                    double daily_max_vaccine = 0.9, c_factory = 0.001;
+                    fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3                             + v_rate*rho[0][ind]*rho[3][ind]); 
+                    fftps[3]->u[ind]  -=  min(daily_max_vaccine, fmax(0, 1.0/c_factory * (- phi[3][ind] - factory_area[i*n1+j] ) ) );
+                    // fftps[3]->u[ind]  -=  fmin(daily_max_vaccine, exp(1.0/c_factory * ( - phi[3][ind] - factory_area[i*n1+j])));
                 }
             }
         }
@@ -574,13 +598,13 @@ public:
             for(int j=0;j<n1;++j){
                 ind = n*n1*n2+i*n1+j;
 
-                fftps[0]->u[ind] -= calculate_deltaEprime(&phi[0][n*n1*n2], obstacle, 1.0, i, j) * nt;
+                fftps[0]->u[ind] -= calculate_deltaEprime(&phi[0][n*n1*n2], obstacle, 2.0, i, j) * nt;
                 fftps[0]->u[ind] += rho[0][ind] * nt;
 
-                fftps[1]->u[ind] -= calculate_deltaEprime(&phi[1][n*n1*n2], obstacle, 1.0, i, j) * nt;
+                fftps[1]->u[ind] -= calculate_deltaEprime(&phi[1][n*n1*n2], obstacle, 2.0, i, j) * nt;
                 fftps[1]->u[ind] += rho[1][ind] * nt;
 
-                fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 0.5, i, j) * nt;
+                fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 2.0, i, j) * nt;
                 fftps[3]->u[ind] += rho[3][ind] * nt;
             }
         }
@@ -708,6 +732,23 @@ public:
 
     void run(double* rho[], const double* obstacle, int skip=1){
 
+
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                double x=(j+.5)/n1;
+                double y=(i+.5)/n2;
+                double vx = x - 0.3;
+                double vy = y - 0.3;
+                double r= 0.075;
+                if(vx*vx + vy*vy < r*r){
+                    rho[3][i*n1+j] = 0.4/nt;
+                }
+            }
+        }
+
+
+
+
         for(int k=0;k<4;++k){
             memcpy(rhont0tmps[k], &rho[k][0], n1*n2*sizeof(double));
         }
@@ -740,6 +781,7 @@ public:
             sanity_value_previous = sanity_value;
 
             for(int k=0;k<4;++k){
+                // fftps[0]->solve_heat_equation(rho[k], 1e-5);
                 for(int i=0;i<n1*n2*nt;++i){
                     phi[k][i] = 2*phi[k][i] - phitmps[k][i];
                 }
@@ -763,7 +805,8 @@ public:
             update_m(mx[2],my[2],rho[2],phi[2],2);
             update_rho3(rhotmps[0],rhotmps[1],rhotmps[2],rho[3],mx[3],my[3],obstacle);
             fftpsDST->solve_heat_equation_with_bdry(rho[3], rhont0tmps[3], 1e-5);
-            update_m(mx[3],my[3],rho[3],phi[3],3);        
+            update_m(mx[3],my[3],rho[3],phi[3],3);     
+
 
             // CALCULATE ENERGY
             error=fabs((energy-previous_energy)/previous_energy);

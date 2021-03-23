@@ -40,8 +40,8 @@ public:
 	            /*
 	            	Exp1
 	            */
-	            rho[i*n1+j] =  fmax(0, 0.6 * exp(-35*pow(x-0.8,2)-35*pow(y-0.7,2)) -0.15) + base;
-	            rho[i*n1+j] += fmax(0, 0.6 * exp(-35*pow(x-0.2,2)-35*pow(y-0.7,2)) -0.15) + base;
+	            rho[i*n1+j] =  5*fmax(0, 0.6 * exp(-35*pow(x-0.7,2)-35*pow(y-0.7,2)) - 0.50);
+	            // rho[i*n1+j] += 2*fmax(0, 0.6 * exp(-35*pow(x-0.2,2)-35*pow(y-0.2,2)) - 0.30);
 
 
 	            /*
@@ -100,13 +100,13 @@ public:
 	            // }
 
 	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
-	            rho[i*n1+j] = fmax(0, 0.6 * exp(-45*pow(x-0.7,2)-45*pow(y-0.7,2)) - 0.1) + base;
+	            rho[i*n1+j] = 2*fmax(0, 0.6 * exp(-45*pow(x-0.2,2)-45*pow(y-0.7,2)) - 0.4);
 
 	            /* exp1 */
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);
 
 	            /* exp2 */
-	            // rho[i*n1+j] = 0.6 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2)) + base;
+	            // rho[i*n1+j] = 0.6 * exp(-35*pow(x-0.6,2)-35*pow(y-0.6,2));
 	            /*
 	            	Ring
 	            */
@@ -172,7 +172,7 @@ public:
 	        for(int j=0;j<n1;++j){
 	        	double x = (j+0.5)/n1;
 	        	double y = (i+0.5)/n2;
-	        	rho[i*n1+j] = 0*fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.6) + base;
+	        	rho[i*n1+j] = 0*fmax(0, 0.8 * exp(-30*pow(x-0.3,2)-30*pow(y-0.3,2)) - 0.6);
 	        }
 	    }
 

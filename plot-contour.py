@@ -89,7 +89,8 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
             ax[0,i].set_title("t = {:.2f}\nsum = {:.3f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
             ax[1,i].set_title("sum = {:.3f}".format(np.sum(rho1[n])/(n1*n2)))
             ax[2,i].set_title("sum = {:.3f}".format(np.sum(rho2[n])/(n1*n2)))
-            ax[3,i].set_title("sum = {:.3f}".format(np.sum(rho3[n])/(n1*n2)))
+            # ax[3,i].set_title("sum = {:.3f}".format(np.sum(rho3[n])/(n1*n2)))
+            ax[3,i].set_title("max = {:.3f}".format(np.max(rho3[n])))
             plt.savefig("figures/SIR-with-mass.png")
         elif title_type == 1:
             ax[0,i].set_title("t = {:.2f}".format(1.0*n/(nt-1)))
@@ -105,9 +106,9 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
 
 def save_plot(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,1,figsize=(3,3))
+    fig, ax = plt.subplots(1,2,figsize=(8,3))
 
-    fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0, hspace=0.2)
+    fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0.2, hspace=0.2)
 
     xx = np.linspace(0,1,nt)
     max0 = np.sum(rho0[0])
@@ -119,19 +120,34 @@ def save_plot(visual=True, total=False):
     # ax.plot(xx,yy0,'.-',label="S")
     # ax.plot(xx,yy1,'.-',label="I")
 
-    ax.plot(xx,yy0,label="S")
-    ax.plot(xx,yy1,label="I")
-    ax.plot(xx,yy2,label="R")
-    ax.plot(xx,yy3,label="V")
-
-    if(total==True):
-        ax.plot(xx,yy2+yy1+yy0,label="Total")
-
-    ax.set_xlabel("t")
+    ax[0].plot(xx,yy0,label="S")
+    ax[0].plot(xx,yy1,label="I")
+    ax[0].plot(xx,yy2,label="R")
+    ax[0].plot(xx,yy2+yy1+yy0,label="Total")
+    ax[0].set_xlabel("Time")
     # ax.set_ylim(200,700)
 
+    ax[1].plot(xx,yy3,label="V")
+
+    V_0 = np.zeros_like(rho3)
+    V_1 = np.zeros_like(rho3)
+
+    X,Y = np.meshgrid(np.linspace(0.5/n1,1-0.5/n1,n2),np.linspace(0.5/n1,1-0.5/n1,n1))
+
+    V_0[:,X-Y>0.5] = 1
+    r = 0.075
+
+    # ax[1].plot(xx,np.sum(np.sum(rho3[:,:,:n1//2],axis=1),axis=1)/(n1*n2),label="V left")
+    # ax[1].plot(xx,np.sum(np.sum(rho3[:,:,n1//2:],axis=1),axis=1)/(n1*n2),label="V right")
+
+    print(rho3[:,(X-0.3)**2+(Y-0.3)**2<r**2].shape)
+    ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.2)**2<r**2],axis=1)/(n1*n2),label="V bottom")
+    ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="V middle")
+    ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.8)**2<r**2],axis=1)/(n1*n2),label="V top")
+
     plt.legend(loc='upper right', framealpha=0.5)
-    plt.grid()
+    ax[0].grid()
+    ax[1].grid()
     plt.savefig("figures/SIR-plot.eps")
     if(visual==True):
         plt.show()
@@ -178,6 +194,7 @@ def save_animation():
     vmax2 = np.max(rho2)
     vmax3 = np.max(rho3)
     vmax  = max(vmax0, vmax1, vmax2)
+    obstacle[obstacle > 0] = 1
     obs_sum = np.sum(obstacle) * 100 / (n1*n2)
 
     # animation function.  This is called sequentially
@@ -203,8 +220,8 @@ def save_animation():
         # cax0.set_clim(0, vmax)
         cax0.set_clim(0, vmax0)
         cax1.set_clim(0, vmax1)
-        cax2.set_clim(0, vmax2)
-        cax3.set_clim(0, vmax3*0.01)
+        cax2.set_clim(0, vmax0)
+        cax3.set_clim(0, vmax3*0.8)
 
         
 
@@ -219,13 +236,7 @@ def save_animation():
 
     # call the animator.  blit=True means only re-draw the parts that have changed.
     anim = animation.FuncAnimation(fig, animate, 
-                                   frames=nt+1, interval=10, blit=True)
-
-    # save the animation as an mp4.  This requires ffmpeg or mencoder to be
-    # installed.  The extra_args ensure that the x264 codec is used, so that
-    # the video can be embedded in html5.  You may need to adjust this for
-    # your system: for more information, see
-    # http://matplotlib.sourceforge.net/api/animation_api.html
+                                   frames=nt+1, interval=100, blit=True)
     anim.save("video.mp4", fps=10)
 
 save_animation()

@@ -78,6 +78,9 @@ public:
     double* psi;
     double* factory_area;
 
+    double daily_max_vaccine;
+    double c_factory;
+
     // ------------------------
 
     Method(){
@@ -192,7 +195,7 @@ public:
         t = clock() - t;
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
-
+        daily_max_vaccine = 0.008; c_factory = 0.0001;
 
 
         psi = new double[n1*n2*nt];
@@ -202,13 +205,23 @@ public:
             for(int j=0;j<n1;++j){
                 double x=(j+.5)/n1;
                 double y=(i+.5)/n2;
-                double vx = x - 0.3;
-                double vy = y - 0.3;
-                double r= 0.075;
-                if(vx*vx + vy*vy < r*r){
+                double vx1 = x - 0.5;
+                double vy1 = y - 0.2;
+
+                double vx2 = x - 0.5;
+                double vy2 = y - 0.8;
+
+                double vx3 = x - 0.5;
+                double vy3 = y - 0.5;
+
+                double r= 0.75;
+
+                if(vx1*vx1 + vy1*vy1 < r*r){
                     factory_area[i*n1+j] = 0;
-                // }else if(fabs(x-0.8)<0.05 && fabs(y-0.2)<0.05){
-                //     factory_area[i*n1+j] = 0;
+                }else if(vx2*vx2 + vy2*vy2 < r*r){
+                    factory_area[i*n1+j] = 0;
+                }else if(vx3*vx3 + vy3*vy3 < r*r){
+                    factory_area[i*n1+j] = 0;
                 }else{
                     factory_area[i*n1+j] = LARGE_NUMBER;
                 }
@@ -278,7 +291,7 @@ public:
                     
                     double rhovalx=rho[n*n1*n2+i*n1+j];
                     double rhovaly=rho[n*n1*n2+i*n1+j];
-                    
+
                     mx[n*n1*n2+i*n1+j] = rhovalx/(tau[SIR] * alphalist[SIR] + rhovalx) * (mx[n*n1*n2+i*n1+j] - tau[SIR] * nablaxphi);
                     my[n*n1*n2+i*n1+j] = rhovaly/(tau[SIR] * alphalist[SIR] + rhovaly) * (my[n*n1*n2+i*n1+j] - tau[SIR] * nablayphi);
                 }
@@ -310,13 +323,13 @@ public:
     double calculate_Eprime(const double* rho, const double* obstacle, const int i, const int j, const double constant=1) const{
         int ind = (nt-1)*n1*n2+i*n1+j;
         double eval = 1.0/constant * (phi[1][ind] - obstacle[i*n1+j]);
-        return fmax(0, eval);
+        return fmin(1, fmax(0, eval));
     }
     
     double calculate_deltaEprime(const double* phi, const double* obstacle, const double constant, int i, int j){
         double eval = 1.0/constant * (phi[i*n1+j] - obstacle[i*n1+j]);
         if(obstacle[i*n1+j] > 0) return 0;
-        return fmax(eval,0);
+        return fmin(1, fmax(0, eval));
     }
 
     void update_rho0(double* rho0,const double* rho1, const double* rho2, const double* rho3,const double* mx,const double* my,const double* obstacle){
@@ -338,30 +351,32 @@ public:
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
                     int ind = n*n1*n2+i*n1+j;
+                    if(obstacle[i*n1+j] > 0){
+                        rho0[ind] = 0;
+                    }else{
+                        double mvalue=0;
+                        double Dtphi =0;
+                        double Deltaphi=0;
+                        calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[0]);
+                        double convval  =  convarr[i*n1+j];
+                        double aval = 1.0/(tauval*c_rho_sum_+1) * 
+                                    (
+                                        tauval * (Dtphi + etalist[0]*Deltaphi + c_rho_sum_*rho1[ind] + c_rho_sum_*rho2[ind]) 
+                                        - rho0[ind] 
+                                        + tauval * (
+                                                    betaval*convval*(phi[1][ind] - phi[0][ind])
+                                                  + v_eff * rho3[ind] * (phi[2][ind] - phi[0][ind])
+                                                  - v_rate * phi[3][ind] * rho3[ind]
+                                                  )
+                                    );
+                        double cval = -0.5*tauval/(tauval*c_rho_sum_+1)*alphalist[0]*mvalue*mvalue;
 
-                    double mvalue=0;
-                    double Dtphi =0;
-                    double Deltaphi=0;
-
-                    calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[0]);
-                    double convval  =  convarr[i*n1+j];
-                    double aval = 1.0/(tauval*c_rho_sum_+1) * 
-                                (
-                                    tauval * (Dtphi + etalist[0]*Deltaphi + c_rho_sum_*rho1[ind] + c_rho_sum_*rho2[ind]) 
-                                    - rho0[ind] 
-                                    + tauval * (
-                                                betaval*convval*(phi[1][ind] - phi[0][ind])
-                                              + v_eff * rho3[ind] * (phi[2][ind] - phi[0][ind])
-                                              - v_rate * phi[3][ind] * rho3[ind]
-                                              + obstacle[i*n1+j]
-                                              )
-                                );
-                    double cval = -0.5*tauval/(tauval*c_rho_sum_+1)*alphalist[0]*mvalue*mvalue;
-
-                    if(n==0)         aval += 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[0][ind] * nt);
-                    // else if(n==nt-1) aval -= 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[0][ind] * nt);
-                	newrhovalue=cubic_solve(aval, 0, cval);
-                    rho0[n*n1*n2+i*n1+j] = fmin(1,fmax(0,newrhovalue));
+                        if(n==0)         aval += 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[0][ind] * nt);
+                        // else if(n==nt-1) aval -= 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[0][ind] * nt);
+                        newrhovalue=cubic_solve(aval, 0, cval);
+                        rho0[ind] = fmin(1,fmax(0,newrhovalue));    
+                    }
+                    
                 }
             }
             fftps2d->solve_heat_equation(&rho0[n*n1*n2], etalist[0]);
@@ -399,25 +414,29 @@ public:
                     double convval3 = convarr[i*n1+j];
                     double convval4 = (phi[2][ind] - phi[1][ind]);
 
-                    double newrhovalue = 0;
-                    double aval=0,cval=0;
+                    if(obstacle[i*n1+j] > 0){
+                        rho1[ind] = 0;
+                    }else{
+                        double newrhovalue = 0;
+                        double aval=0,cval=0;
 
-                        aval = 1.0/(tauval*c_rho_sum_+1) * 
-                                ( 
-                                    tauval * (
-                                        Dtphi + etalist[1]*Deltaphi + c_rho_sum_*rho0[ind] + c_rho_sum_*rho2[ind]
-                                              + betaval * convval3 + gammaval * convval4
-                                              + obstacle[i*n1+j]
-                                             )
-                                    - rho1[ind] 
-                                );
+                            aval = 1.0/(tauval*c_rho_sum_+1) * 
+                                    ( 
+                                        tauval * (
+                                            Dtphi + etalist[1]*Deltaphi + c_rho_sum_*rho0[ind] + c_rho_sum_*rho2[ind]
+                                                  + betaval * convval3 + gammaval * convval4
+                                                 )
+                                        - rho1[ind] 
+                                    );
 
-                        if(n==0) aval += 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[1][ind] * nt);
-                        cval = -0.5*tauval/(tauval*c_rho_sum_+1)*alphalist[1]*mvalue*mvalue;
+                            if(n==0) aval += 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[1][ind] * nt);
+                            cval = -0.5*tauval/(tauval*c_rho_sum_+1)*alphalist[1]*mvalue*mvalue;
 
 
-                    newrhovalue=cubic_solve(aval, 0, cval);                    
-                    rho1[ind]=fmin(1,fmax(0,newrhovalue));
+                        newrhovalue=cubic_solve(aval, 0, cval);                    
+                        rho1[ind]=fmin(1,fmax(0,newrhovalue));    
+                    }
+                    
                 }
             }
             fftps2d->solve_heat_equation(&rho1[n*n1*n2], etalist[1]);
@@ -440,15 +459,20 @@ public:
                     double Dtphi =0;
                     double Deltaphi=0;
 
-                    calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[2]);
+                    if(obstacle[i*n1+j] > 0){
+                        rho2[ind]=0;
+                    }else{
 
-                    double aval  = 1.0/(tauval*c_rho_sum_+1) * (tauval * (Dtphi + etalist[2]*Deltaphi + c_rho_sum_*rho0[ind] + c_rho_sum_*rho1[ind] + + obstacle[i*n1+j]) - rho2[ind]);
+                        calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[2]);
 
-                    if(n==0)         aval += 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[2][ind] * nt);
-                    else if(n==nt-1) aval -= 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[2][ind] * nt);
+                        double aval  = 1.0/(tauval*c_rho_sum_+1) * (tauval * (Dtphi + etalist[2]*Deltaphi + c_rho_sum_*rho0[ind] + c_rho_sum_*rho1[ind]) - rho2[ind]);
 
-                    double newrhovalue=cubic_solve(aval, 0, -0.5*tauval/(tauval*c_rho_sum_+1)*alphalist[2]*mvalue*mvalue);
-                    rho2[ind]=fmin(1,fmax(0,newrhovalue));
+                        if(n==0)         aval += 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[2][ind] * nt);
+                        else if(n==nt-1) aval -= 1.0/(tauval*c_rho_sum_+1) * (tauval * phi[2][ind] * nt);
+
+                        double newrhovalue=cubic_solve(aval, 0, -0.5*tauval/(tauval*c_rho_sum_+1)*alphalist[2]*mvalue*mvalue);
+                        rho2[ind]=fmin(1,fmax(0,newrhovalue));
+                    }
                 }
             }
             fftps2d->solve_heat_equation(&rho2[n*n1*n2], etalist[2]);
@@ -462,7 +486,7 @@ public:
 
         memcpy(&rho3[0], rhont0tmps[3], n1*n2*sizeof(double));
 
-        for(int n=1;n<nt;++n){
+        for(int n=1;n<0.5*nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -472,27 +496,53 @@ public:
                     double Dtphi =0;
                     double Deltaphi=0;
 
-                    calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[3]);
+                    if(obstacle[i*n1+j] > 0){
+                        rho3[ind]=0;
+                    }else{
+                        calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[3]);
+                        double newrhovalue = 1.0/(c_rho_V + 1.0/tauval) * (- Dtphi + 1.0/tauval * rho3[ind] 
+                                + v_rate * rho0[ind] *  phi[3][ind]
+                                - v_eff  * rho0[ind] * (phi[2][ind] - phi[0][ind]));
+                        rho3[ind]=fmin(1,fmax(0,newrhovalue));
+                    }
+                }
+            }
+            // fftps2d->solve_heat_equation(&rho3[n*n1*n2], etalist[3]);
+        }
 
-                    double aval=0,cval=0;
+        for(int n=0.5*nt;n<nt;++n){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
 
-                        aval =  ( 
-                                    1.0/(c_rho_V + 1.0/tauval) * (
-                                                    Dtphi 
-                                                  // + etalist[3]*Deltaphi
-                                                  - v_rate * rho0[ind] *  phi[3][ind]
-                                                  + v_eff  * rho0[ind] * (phi[2][ind] - phi[0][ind])
-                                                  - 1.0/tauval * rho3[ind]
-                                                  + obstacle[i*n1+j]
-                                             )
-                                );
-                        if(n==0)         aval += 1.0/(c_rho_V + 1.0/tauval) * phi[3][ind] * nt;
-                        // else if(n==nt-1) aval -= tauval * phi[3][ind] * nt;
+                    int ind = n*n1*n2+i*n1+j;
 
-                        cval = - 0.5*alphalist[3]*mvalue*mvalue * 1.0/(c_rho_V + 1.0/tauval);
+                    double mvalue=0;
+                    double Dtphi =0;
+                    double Deltaphi=0;
 
-                    double newrhovalue=cubic_solve(aval, 0, cval); 
-                    rho3[ind]=fmin(1,fmax(0,newrhovalue));
+                    if(obstacle[i*n1+j] > 0){
+                        rho3[ind] = 0;
+                    }else{
+                        calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[3]);
+
+                        double aval=0,cval=0;
+
+                            aval =  ( 
+                                        1.0/(c_rho_V + 1.0/tauval) * (
+                                                Dtphi 
+                                                - v_rate * rho0[ind] *  phi[3][ind]
+                                                + v_eff  * rho0[ind] * (phi[2][ind] - phi[0][ind])
+                                                - 1.0/tauval * rho3[ind]
+                                                )
+                                    );
+                            // if(n==0)         aval += 1.0/(c_rho_V + 1.0/tauval) * phi[3][ind] * nt;
+                            // else if(n==nt-1) aval -= tauval * phi[3][ind] * nt;
+
+                            cval = - 0.5*alphalist[3]*mvalue*mvalue * 1.0/(c_rho_V + 1.0/tauval);
+
+                        double newrhovalue=cubic_solve(aval, 0, cval); 
+                        rho3[ind]=fmin(1,fmax(0,newrhovalue));
+                    }
                 }
             }
             // fftps2d->solve_heat_equation(&rho3[n*n1*n2], etalist[3]);
@@ -584,10 +634,12 @@ public:
                     fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*convval_gamma      - v_eff*rho[0][ind]*rho[3][ind]  - etalist[2]*Deltarho2 ); 
                     // fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3 - factory[ind]             + v_rate*rho[0][ind]*rho[3][ind] - etalist[3]*Deltarho3*0 ); 
 
-                    double daily_max_vaccine = 0.9, c_factory = 0.001;
-                    fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3                             + v_rate*rho[0][ind]*rho[3][ind]); 
-                    fftps[3]->u[ind]  -=  min(daily_max_vaccine, fmax(0, 1.0/c_factory * (- phi[3][ind] - factory_area[i*n1+j] ) ) );
-                    // fftps[3]->u[ind]  -=  fmin(daily_max_vaccine, exp(1.0/c_factory * ( - phi[3][ind] - factory_area[i*n1+j])));
+                    if(n < 0.5*nt){
+                        fftps[3]->u[ind]  = - (dtrho3 - factory[ind] + v_rate*rho[0][ind]*rho[3][ind]); 
+                    }else{
+                        fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3 + v_rate*rho[0][ind]*rho[3][ind]); 
+                    }
+                    
                 }
             }
         }
@@ -725,29 +777,26 @@ public:
         }
     }
 
+    void update_factory(double* factory){
+        for(int n=0;n<0.5*nt;++n){
+            for(int i=0;i<n1*n2;++i){
+                if(factory_area[i] == 0){
+                    // double val = factory[n*n1*n2+i] - tau[3] * (phi[3][n*n1*n2+i] + c_factory * factory[n*n1*n2+i]);
+                    double val = 1.0 / (c_factory + 1.0 / tau[3]) * ( 1.0 / tau[3] * factory[n*n1*n2+i] - phi[3][n*n1*n2+i] );
+                    factory[n*n1*n2+i] = fmin(daily_max_vaccine, fmax(0, val));
+                }else{
+                    factory[n*n1*n2+i] = 0;
+                }
+            }
+        }
+    }
+
     void display_log(const int iterPDHG, const double tau, const double sigma, const double energy, const double dual, const double error, const double dual_gap, const double sanity_value) const{
         // cout<<"iter : "<< setw(8) << iterPDHG+1<< " tau : "<< setw(13) <<tau <<" sigma : " << setw(13)<<sigma <<" energy : " << setw(13)<<energy <<" dual : " << setw(13) << dual << " relative_error : " << setw(13) << error <<" dual_gap : " << setw(13) << dual_gap<<" sanity_value : " << setw(13) << sanity_value << endl;  
         printf("iter: %5d tau: %5.2f sigma: %5.2f energy: %10.4e dual: %10.4e rel error: %10.4e dual gap: %10.4e sanity value: %10.4e\n", iterPDHG+1, tau, sigma, energy, dual, error, dual_gap, sanity_value);
     }
 
     void run(double* rho[], const double* obstacle, int skip=1){
-
-
-        for(int i=0;i<n2;++i){
-            for(int j=0;j<n1;++j){
-                double x=(j+.5)/n1;
-                double y=(i+.5)/n2;
-                double vx = x - 0.3;
-                double vy = y - 0.3;
-                double r= 0.075;
-                if(vx*vx + vy*vy < r*r){
-                    rho[3][i*n1+j] = 0.4/nt;
-                }
-            }
-        }
-
-
-
 
         for(int k=0;k<4;++k){
             memcpy(rhont0tmps[k], &rho[k][0], n1*n2*sizeof(double));
@@ -805,7 +854,16 @@ public:
             update_m(mx[2],my[2],rho[2],phi[2],2);
             update_rho3(rhotmps[0],rhotmps[1],rhotmps[2],rho[3],mx[3],my[3],obstacle);
             fftpsDST->solve_heat_equation_with_bdry(rho[3], rhont0tmps[3], 1e-5);
-            update_m(mx[3],my[3],rho[3],phi[3],3);     
+            update_m(mx[3],my[3],rho[3],phi[3],3);   
+
+            update_factory(factory);
+
+            for(int n=0;n<0.5*nt;++n){
+                for(int i=0;i<n1*n2;++i){
+                    mx[3][n*n1*n2+i] = 0;
+                    my[3][n*n1*n2+i] = 0;
+                }
+            }  
 
 
             // CALCULATE ENERGY

@@ -198,7 +198,7 @@ int main(int argc, char **argv)
     double base=0;
 
     // coefficients for velocities
-    double alphalist[4] = {10.0, 10.0, 10.0, 0.001};
+    double alphalist[4] = {10.0, 10.0, 10.0, 0.005};
     // coefficients for SIR model
     double var = 0.005;
 
@@ -227,9 +227,13 @@ int main(int argc, char **argv)
         for(int j=0;j<n1;++j){
             double x = (j+0.5)/n1;
             double y = (i+0.5)/n2;
-            // if(x < 0.2 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
-            // if(x > 0.8 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
-            // if(x > 0.3 && x < 0.7 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
+            if(fabs(y-0.2) < 0.05 && fabs(x-0.35)<0.02) obstacle[i*n1+j] = 99999999;
+            if(fabs(y-0.2) < 0.05 && fabs(x-0.65)<0.02) obstacle[i*n1+j] = 99999999;
+
+            if(fabs(y-0.8) < 0.05 && fabs(x-0.35)<0.02) obstacle[i*n1+j] = 99999999;
+            if(fabs(y-0.8) < 0.05 && fabs(x-0.65)<0.02) obstacle[i*n1+j] = 99999999;
+            // if(y > 0.8 && fabs(y-0.4)<0.02) obstacle[i*n1+j] = 1;
+            // if(y > 0.3 && x < 0.7 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
         }
     }
 

@@ -127,7 +127,7 @@ def save_plot(visual=True, total=False):
     ax[0].set_xlabel("Time")
     # ax.set_ylim(200,700)
 
-    ax[1].plot(xx,yy3,label="V")
+    # ax[1].plot(xx,yy3,label="V")
 
     V_0 = np.zeros_like(rho3)
     V_1 = np.zeros_like(rho3)
@@ -171,6 +171,15 @@ plt.close();
 save_plot_contour(visual=True, SIR=True, title_type = 0)
 save_plot(visual=True,  total=True)
 
+import matplotlib.patches as patches
+
+def get_circle(center, radius):
+    angle = np.linspace( 0 , 2 * np.pi , 150 )     
+    x = radius * n1 * np.cos( angle ) + center[0] * n1 - 0.5
+    y = radius * n2 * np.sin( angle ) + center[1] * n2 - 0.5
+    return x,y
+def get_rect(x,y,w,h):
+    return x*n1-0.5-w*n1, y*n2-0.5-h*n2, w*n1*2, h*n2*2
 def save_animation():
     # First set up the figure, the axis, and the plot element we want to animate
     num = 4; w = 16
@@ -182,6 +191,16 @@ def save_animation():
     cax1 = ax[1].imshow(rho1[0], cmap='inferno', origin='lower')
     cax2 = ax[2].imshow(rho2[0], cmap='inferno', origin='lower')
     cax3 = ax[3].imshow(rho3[0], cmap='inferno', origin='lower')
+
+    angle = np.linspace( 0 , 2 * np.pi , 150 ) 
+ 
+    # factory area
+    x,y = get_circle((0.5,0.5), 0.1)
+    ax[3].plot( x, y , 'tab:green') 
+    x,y = get_circle((0.5,0.2), 0.1)
+    ax[3].plot( x, y , 'tab:green') 
+    x,y = get_circle((0.5,0.8), 0.1)
+    ax[3].plot( x, y , 'tab:green')
 
     ax[0].set_axis_off()
     ax[1].set_axis_off()

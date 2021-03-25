@@ -223,19 +223,16 @@ int main(int argc, char **argv)
 
     for(int i=0;i<n1*n2;++i) obstacle[i] = 0;
 
-    for(int i=0;i<n2;++i){
-        for(int j=0;j<n1;++j){
-            double x = (j+0.5)/n1;
-            double y = (i+0.5)/n2;
-            if(fabs(y-0.2) < 0.05 && fabs(x-0.35)<0.02) obstacle[i*n1+j] = 99999999;
-            if(fabs(y-0.2) < 0.05 && fabs(x-0.65)<0.02) obstacle[i*n1+j] = 99999999;
-
-            if(fabs(y-0.8) < 0.05 && fabs(x-0.35)<0.02) obstacle[i*n1+j] = 99999999;
-            if(fabs(y-0.8) < 0.05 && fabs(x-0.65)<0.02) obstacle[i*n1+j] = 99999999;
-            // if(y > 0.8 && fabs(y-0.4)<0.02) obstacle[i*n1+j] = 1;
-            // if(y > 0.3 && x < 0.7 && fabs(y-0.4)<0.1) obstacle[i*n1+j] = 1;
-        }
-    }
+    // for(int i=0;i<n2;++i){
+    //     for(int j=0;j<n1;++j){
+    //         double x = (j+0.5)/n1;
+    //         double y = (i+0.5)/n2;
+    //         if(fabs(y-0.2) < 0.125 && fabs(x-0.35)<0.02) obstacle[i*n1+j] = 99999999;
+    //         if(fabs(y-0.2) < 0.125 && fabs(x-0.65)<0.02) obstacle[i*n1+j] = 99999999;
+    //         if(fabs(y-0.8) < 0.125 && fabs(x-0.35)<0.02) obstacle[i*n1+j] = 99999999;
+    //         if(fabs(y-0.8) < 0.125 && fabs(x-0.65)<0.02) obstacle[i*n1+j] = 99999999;
+    //     }
+    // }
 
     create_bin_file(obstacle, n1*n2, "./data/obstacle.csv");
 

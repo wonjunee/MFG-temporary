@@ -214,7 +214,7 @@ public:
                 double vx3 = x - 0.5;
                 double vy3 = y - 0.5;
 
-                double r= 0.75;
+                double r= 0.1;
 
                 if(vx1*vx1 + vy1*vy1 < r*r){
                     factory_area[i*n1+j] = 0;

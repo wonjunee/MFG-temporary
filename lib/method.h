@@ -78,7 +78,8 @@ public:
     double* psi;
     double* factory_area;
 
-    double daily_max_vaccine;
+    double max_vaccine_amount;
+    double max_total_vaccine_amount;
     double c_factory;
 
     // ------------------------
@@ -132,7 +133,7 @@ public:
 
         printf("Alpha values\n");
         for(int k=0;k<4;++k){
-            printf("k: %d alpha: %f\n", k, this->alphalist[k]);
+            printf("k: %d alpha: %6.2e\n", k, this->alphalist[k]);
         }
 
         c_rho_sum_ = 0.4;
@@ -143,24 +144,12 @@ public:
         // factory is a function in space and time that represents the location of factories and the vaccines produced in factories.
         // It is a nonnegative function only positive on factory locations.
         factory = new double[n1*n2*nt];
-
-        // defining factory
-        for(int n=0;n<nt;++n){
-            for(int i=0;i<n2;++i){
-                for(int j=0;j<n1;++j){
-                    double x = (j+.5)/n1;
-                    double y = (i+.5)/n2;
-                    factory[n*n1*n2+i*n1+j] = 0*fmax(0, 0.8 * exp(-30*pow(x-0.5,2)-30*pow(y-0.2,2)) - 0.7);
-                    // factory[n*n1*n2+i*n1+j] = 0;
-                }
-            }
-        }
-
-
+        memset(factory, 0, n1*n2*nt*sizeof(double));
+        
         // Vaccine efficiency, i.e. the rate people can be vaccinated
         v_eff  = 0.9;
         // Vaccine rate, i.e. the number of vaccines the doctors can use per day.
-        v_rate = 0.2;
+        v_rate = 0.9;
 
         var_gamma = 0.01; // DON'T TOUCH THIS. This one is for regularization.
 
@@ -195,9 +184,6 @@ public:
         t = clock() - t;
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
-        daily_max_vaccine = 0.008; c_factory = 0.0001;
-
-
         psi = new double[n1*n2*nt];
         factory_area = new double[n1*n2];
 
@@ -227,6 +213,24 @@ public:
                 }
             }
         }
+
+        max_total_vaccine_amount = 0.01;
+
+        {
+            double s = 0;
+            for(int i=0;i<n1*n2;++i){
+                if(factory_area[i] == 0){
+                    ++s;
+                }
+            }
+            s /= n1*n2;
+
+            max_vaccine_amount = max_total_vaccine_amount / s;
+        }
+        
+        c_factory = 0.001;
+
+        printf("Max total vaccine: %6.2e\tmax vaccine: %6.2e\tc_factory: %6.2e\n", max_total_vaccine_amount, max_vaccine_amount, c_factory);
     }
 
 
@@ -278,16 +282,10 @@ public:
         for(int n=0;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
-                    double nablaxphi = 0;
-                    double nablayphi = 0;
-
                     setup_indices(im,ip,jm,jp,i,j);
 
-                    // nablaxphi = 0.5*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+jm]);
-                    // nablayphi = 0.5*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+im*n1+j]);
-
-                    nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+j]);
-                    nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+i*n1+j]);
+                    double nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+j]);
+                    double nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+i*n1+j]);
                     
                     double rhovalx=rho[n*n1*n2+i*n1+j];
                     double rhovaly=rho[n*n1*n2+i*n1+j];
@@ -323,7 +321,7 @@ public:
     double calculate_Eprime(const double* rho, const double* obstacle, const int i, const int j, const double constant=1) const{
         int ind = (nt-1)*n1*n2+i*n1+j;
         double eval = 1.0/constant * (phi[1][ind] - obstacle[i*n1+j]);
-        return fmin(1, fmax(0, eval));
+        return fmax(0, eval);
     }
     
     double calculate_deltaEprime(const double* phi, const double* obstacle, const double constant, int i, int j){
@@ -455,13 +453,12 @@ public:
 
                     int ind = n*n1*n2+i*n1+j;
 
-                    double mvalue=0;
-                    double Dtphi =0;
-                    double Deltaphi=0;
-
                     if(obstacle[i*n1+j] > 0){
                         rho2[ind]=0;
                     }else{
+                        double mvalue=0;
+                        double Dtphi =0;
+                        double Deltaphi=0;
 
                         calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[2]);
 
@@ -492,18 +489,20 @@ public:
 
                     int ind = n*n1*n2+i*n1+j;
 
-                    double mvalue=0;
-                    double Dtphi =0;
-                    double Deltaphi=0;
-
                     if(obstacle[i*n1+j] > 0){
                         rho3[ind]=0;
                     }else{
+                        double mvalue=0;
+                        double Dtphi =0;
+                        double Deltaphi=0;
+
                         calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[3]);
+
                         double newrhovalue = 1.0/(c_rho_V + 1.0/tauval) * (- Dtphi + 1.0/tauval * rho3[ind] 
                                 + v_rate * rho0[ind] *  phi[3][ind]
                                 - v_eff  * rho0[ind] * (phi[2][ind] - phi[0][ind]));
-                        rho3[ind]=fmin(1,fmax(0,newrhovalue));
+
+                        rho3[ind]=fmin(max_vaccine_amount,fmax(0,newrhovalue));
                     }
                 }
             }
@@ -516,13 +515,13 @@ public:
 
                     int ind = n*n1*n2+i*n1+j;
 
-                    double mvalue=0;
-                    double Dtphi =0;
-                    double Deltaphi=0;
-
                     if(obstacle[i*n1+j] > 0){
                         rho3[ind] = 0;
-                    }else{
+                    }else{                    
+                        double mvalue=0;
+                        double Dtphi =0;
+                        double Deltaphi=0;
+
                         calculate_rho_related(mvalue, Dtphi, Deltaphi, n, i, j, mx, my, phi[3]);
 
                         double aval=0,cval=0;
@@ -536,7 +535,7 @@ public:
                                                 )
                                     );
                             // if(n==0)         aval += 1.0/(c_rho_V + 1.0/tauval) * phi[3][ind] * nt;
-                            // else if(n==nt-1) aval -= tauval * phi[3][ind] * nt;
+                            // if(n==nt-1) aval -= tauval * phi[3][ind] * nt;
 
                             cval = - 0.5*alphalist[3]*mvalue*mvalue * 1.0/(c_rho_V + 1.0/tauval);
 
@@ -549,48 +548,31 @@ public:
         }
     }
 
-    double calculate_grad_mx(const double* mxTmp, int n, int i, int j){
-        double mxval; int im,ip,jm,jp;
-        setup_indices(im,ip,jm,jp,i,j);
-
-        // mxval = 0.5*n1*(mxTmp[n*n1*n2+i*n1+jp]-mxTmp[n*n1*n2+i*n1+jm]);
-        mxval = n1*(mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+jm]);
-
-        return mxval;
+    double calculate_grad_mx(const double* mxTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+        return n1*(mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+jm]);
     }
 
-    double calculate_grad_my(const double* myTmp, int n, int i, int j){
-        double myval; int im,ip,jm,jp;
-        setup_indices(im,ip,jm,jp,i,j);
-        // myval = 0.5*n2*(myTmp[n*n1*n2+ip*n1+j]-myTmp[n*n1*n2+im*n1+j]);        
-        myval = n2*(myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+im*n1+j]);
-
-        return myval;
+    double calculate_grad_my(const double* myTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+        return n2*(myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+im*n1+j]);
     }
-
-
 
     double calculate_dtrho(const double* rho, const int n, const int i, const int j){
     	double dtrho=0;
-
-    	if(n==nt-1){
-            dtrho=0;
-        }else{
-            dtrho=1.0*nt*(rho[(n+1)*n1*n2+i*n1+j]-rho[(n)*n1*n2+i*n1+j]); 
-        }
+    	if(n==nt-1) dtrho=0;
+        else        dtrho=1.0*nt*(rho[(n+1)*n1*n2+i*n1+j]-rho[(n)*n1*n2+i*n1+j]); 
         return dtrho;
     }
 
-    double calculate_Delta_value(const double* rho, const int n, const int i, const int j){
-        return - n1*n1 * (-rho[n*n1*n2+i*n1+(int) fmax(0,j-1)]+2*rho[n*n1*n2+i*n1+j]-rho[n*n1*n2+i*n1+(int) fmin(n1-1,j+1)])
-               - n2*n2 * (-rho[n*n1*n2+(int) fmax(0,i-1)*n1+j]+2*rho[n*n1*n2+i*n1+j]-rho[n*n1*n2 +(int) fmin(n2-1,i+1)*n1+j]);
+    double calculate_Delta_value(const double* rho, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+        return - n1*n1 * (-rho[n*n1*n2+i*n1+jm]+2*rho[n*n1*n2+i*n1+j]-rho[n*n1*n2+i*n1+jp])
+               - n2*n2 * (-rho[n*n1*n2+im*n1+j]+2*rho[n*n1*n2+i*n1+j]-rho[n*n1*n2+ip*n1+j]);
     }
 
     double update_phi_all(double* const rho[], double* const mx[], double* const my[], const double* obstacle){
 
-    int n, i, j, ind;
     double dtrho0, nablamx0, nablamy0, dtrho1, nablamx1, nablamy1, dtrho2, nablamx2, nablamy2, Deltarho0, Deltarho1, Deltarho2, convval, convval_gamma;
     double dtrho3, nablamx3, nablamy3, Deltarho3;
+    int n,ip,im,jp,jm,ind;
 
         for(int n=0;n<nt;++n){  
 
@@ -605,25 +587,27 @@ public:
 
                     ind = n*n1*n2+i*n1+j;
 
+                    setup_indices(im,ip,jm,jp,i,j);
+
                     dtrho0 = calculate_dtrho(rho[0], n, i, j);
-                    nablamx0=calculate_grad_mx(mx[0],n,i,j);
-                    nablamy0=calculate_grad_my(my[0],n,i,j);
-                    Deltarho0 = calculate_Delta_value(rho[0],n,i,j);
+                    nablamx0=calculate_grad_mx(mx[0],n,im,i,ip,jm,j,jp);
+                    nablamy0=calculate_grad_my(my[0],n,im,i,ip,jm,j,jp);
+                    Deltarho0 = calculate_Delta_value(rho[0],n,im,i,ip,jm,j,jp);
 
                     dtrho1 = calculate_dtrho(rho[1], n, i, j);
-                    nablamx1=calculate_grad_mx(mx[1],n,i,j);
-                    nablamy1=calculate_grad_my(my[1],n,i,j);
-                    Deltarho1 = calculate_Delta_value(rho[1],n,i,j);
+                    nablamx1=calculate_grad_mx(mx[1],n,im,i,ip,jm,j,jp);
+                    nablamy1=calculate_grad_my(my[1],n,im,i,ip,jm,j,jp);
+                    Deltarho1 = calculate_Delta_value(rho[1],n,im,i,ip,jm,j,jp);
 
                     dtrho2 = calculate_dtrho(rho[2], n, i, j);
-                    nablamx2=calculate_grad_mx(mx[2],n,i,j);
-                    nablamy2=calculate_grad_my(my[2],n,i,j);
-                    Deltarho2 = calculate_Delta_value(rho[2],n,i,j);
+                    nablamx2=calculate_grad_mx(mx[2],n,im,i,ip,jm,j,jp);
+                    nablamy2=calculate_grad_my(my[2],n,im,i,ip,jm,j,jp);
+                    Deltarho2 = calculate_Delta_value(rho[2],n,im,i,ip,jm,j,jp);
 
                     dtrho3 = calculate_dtrho(rho[3], n, i, j);
-                    nablamx3=calculate_grad_mx(mx[3],n, i, j);
-                    nablamy3=calculate_grad_my(my[3],n, i, j);
-                    Deltarho3 = calculate_Delta_value(rho[3],n,i,j);
+                    nablamx3=calculate_grad_mx(mx[3],n,im,i,ip,jm,j,jp);
+                    nablamy3=calculate_grad_my(my[3],n,im,i,ip,jm,j,jp);
+                    Deltarho3 = calculate_Delta_value(rho[3],n,im,i,ip,jm,j,jp);
 
                     convval = convarr[i*n1+j];
 
@@ -632,7 +616,6 @@ public:
                     fftps[0]->u[ind]  = - (dtrho0 + nablamx0 + nablamy0 + beta*rho[0][ind]*convval + v_eff*rho[0][ind]*rho[3][ind]  - etalist[0]*Deltarho0 ); 
                     fftps[1]->u[ind]  = - (dtrho1 + nablamx1 + nablamy1 - beta*rho[0][ind]*convval + gamma*convval_gamma            - etalist[1]*Deltarho1 );
                     fftps[2]->u[ind]  = - (dtrho2 + nablamx2 + nablamy2 - gamma*convval_gamma      - v_eff*rho[0][ind]*rho[3][ind]  - etalist[2]*Deltarho2 ); 
-                    // fftps[3]->u[ind]  = - (dtrho3 + nablamx3 + nablamy3 - factory[ind]             + v_rate*rho[0][ind]*rho[3][ind] - etalist[3]*Deltarho3*0 ); 
 
                     if(n < 0.5*nt){
                         fftps[3]->u[ind]  = - (dtrho3 - factory[ind] + v_rate*rho[0][ind]*rho[3][ind]); 
@@ -656,10 +639,19 @@ public:
                 fftps[1]->u[ind] -= calculate_deltaEprime(&phi[1][n*n1*n2], obstacle, 2.0, i, j) * nt;
                 fftps[1]->u[ind] += rho[1][ind] * nt;
 
-                fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 2.0, i, j) * nt;
+                fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 0.1, i, j) * nt;
                 fftps[3]->u[ind] += rho[3][ind] * nt;
             }
         }
+
+        // n = nt/2;
+        // for(int i=0;i<n2;++i){
+        //     for(int j=0;j<n1;++j){
+        //         ind = n*n1*n2+i*n1+j;
+        //         fftps[3]->u[ind] -= calculate_deltaEprime(&phi[3][n*n1*n2], obstacle, 1.0, i, j) * nt;
+        //         fftps[3]->u[ind] += rho[3][ind] * nt;
+        //     }
+        // }
 
         double error = 0;
 
@@ -781,9 +773,9 @@ public:
         for(int n=0;n<0.5*nt;++n){
             for(int i=0;i<n1*n2;++i){
                 if(factory_area[i] == 0){
-                    // double val = factory[n*n1*n2+i] - tau[3] * (phi[3][n*n1*n2+i] + c_factory * factory[n*n1*n2+i]);
                     double val = 1.0 / (c_factory + 1.0 / tau[3]) * ( 1.0 / tau[3] * factory[n*n1*n2+i] - phi[3][n*n1*n2+i] );
-                    factory[n*n1*n2+i] = fmin(daily_max_vaccine, fmax(0, val));
+                    // factory[n*n1*n2+i] = fmin(max_vaccine_amount, fmax(0, val));
+                    factory[n*n1*n2+i] = fmin(100000.0, fmax(0, val));
                 }else{
                     factory[n*n1*n2+i] = 0;
                 }
@@ -792,8 +784,7 @@ public:
     }
 
     void display_log(const int iterPDHG, const double tau, const double sigma, const double energy, const double dual, const double error, const double dual_gap, const double sanity_value) const{
-        // cout<<"iter : "<< setw(8) << iterPDHG+1<< " tau : "<< setw(13) <<tau <<" sigma : " << setw(13)<<sigma <<" energy : " << setw(13)<<energy <<" dual : " << setw(13) << dual << " relative_error : " << setw(13) << error <<" dual_gap : " << setw(13) << dual_gap<<" sanity_value : " << setw(13) << sanity_value << endl;  
-        printf("iter: %5d tau: %5.2f sigma: %5.2f energy: %10.4e dual: %10.4e rel error: %10.4e dual gap: %10.4e sanity value: %10.4e\n", iterPDHG+1, tau, sigma, energy, dual, error, dual_gap, sanity_value);
+        printf("iter: %5d tau: %5.2f sigma: %5.2f energy: %10.4e dual: %10.4e rel error: %10.4e dual gap: %10.4e dual error: %10.4e\n", iterPDHG+1, tau, sigma, energy, dual, error, dual_gap, sanity_value);
     }
 
     void run(double* rho[], const double* obstacle, int skip=1){

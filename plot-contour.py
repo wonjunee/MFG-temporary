@@ -220,6 +220,7 @@ def save_animation():
     def animate(n):
         # fig.clear()
         
+        rho3max = np.max(rho3[np.maximum(0,n-1)])
 
         rho0[np.maximum(0,n-1)][obstacle[0] > 0] = 100
         rho1[np.maximum(0,n-1)][obstacle[0] > 0] = 100
@@ -240,14 +241,15 @@ def save_animation():
         cax0.set_clim(0, vmax0)
         cax1.set_clim(0, vmax1)
         cax2.set_clim(0, vmax0)
-        cax3.set_clim(0, vmax3*0.8)
+        cax3.set_clim(0, vmax3*0.99)
 
         
 
         ax[0].set_title("Susceptible: {:.4f}".format(rho0sum))
         ax[1].set_title("Infected: {:.4f}".format(rho1sum))
         ax[2].set_title("Recovered: {:.4f}".format(rho2sum))
-        ax[3].set_title("Vaccine: {:.4f}".format(rho3sum))
+        # ax[3].set_title("Vaccine: {:.4f}".format(rho3sum))
+        ax[3].set_title("Vaccine: {:.4f}".format(rho3max))
 
         # cax0.set_clim(0, 10)
         plt.suptitle("$\\beta$={:.2}, $\\gamma$={:.2}, $\\sigma$={:.3}\nt={:.2f}".format(beta,gamma,var,n/nt))

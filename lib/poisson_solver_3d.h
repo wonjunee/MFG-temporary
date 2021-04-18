@@ -224,6 +224,18 @@ public:
         fftw_execute(planOut);
         memcpy(rho,workspace,n1*n2*nt*sizeof(double));
     }
+
+    // function for general rho. Boundary for t=0 only
+    void solve_heat_equation_with_bdry(double* rho, double tau){
+        memcpy(workspace,rho,n1*n2*nt*sizeof(double));
+        // boundary
+        for(int i=0;i<n1*n2;++i) workspace[i]              += 2*tau*nt*nt*rho[i];
+        for(int i=0;i<n1*n2;++i) workspace[(nt-1)*n1*n2+i] += 2*tau*nt*nt*rho[(nt-1)*n1*n2+i];
+        fftw_execute(planIn);
+        for(int i=0;i<n1*n2*nt;++i) workspace[i] /= 8.0*n1*n2*nt * (1 + tau * kernel[i]);
+        fftw_execute(planOut);
+        memcpy(rho,workspace,n1*n2*nt*sizeof(double));
+    }
 };
 
 

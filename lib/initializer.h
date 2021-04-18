@@ -31,48 +31,20 @@ public:
 	            double x=1.0*(j+0.5)/n1;
 	            double y=1.0*(i+0.5)/n2;
 
-	            // if(pow(x-0.7,2) + pow(y-0.7,2) < pow(0.2,2)){
-	            //     rho[i*n1+j] = 0.4;    
-	            // }else{
-	            //     rho[i*n1+j] = 0;
-	            // }
+	            /* Exp1 */
+	            // rho[i*n1+j] =  fmax(0, 2*exp(-5*pow(x-0.7,2)-5*pow(y-0.7,2)) - 1.5);
+
+	            /* Exp2 */
+	            // rho[i*n1+j]  = fmax(0, 2*exp(-15*pow(x-0.2,2)-15*pow(y-0.5,2)) - 1.6);
+	            // rho[i*n1+j] += fmax(0, 2*exp(-15*pow(x-0.8,2)-15*pow(y-0.5,2)) - 1.6);
 
 	            /*
-	            	Exp1
+	            	Exp3
 	            */
-	            rho[i*n1+j] =  5*fmax(0, 0.6 * exp(-35*pow(x-0.8,2)-35*pow(y-0.8,2)) - 0.50);
-	            rho[i*n1+j]+=  5*fmax(0, 0.6 * exp(-35*pow(x-0.2,2)-35*pow(y-0.7,2)) - 0.50);
-	            rho[i*n1+j]+=  5*fmax(0, 0.6 * exp(-35*pow(x-0.8,2)-35*pow(y-0.3,2)) - 0.50);
-	            rho[i*n1+j]+=  5*fmax(0, 0.6 * exp(-35*pow(x-0.2,2)-35*pow(y-0.2,2)) - 0.50);
-
-
-	            /*
-	            	Exp2
-	            */
-	            // rho[i*n1+j] = 0.5;
-
-	            /*
-	            	nonsymmetric example  
-	            */
-	            // if(x>0.1 && x<0.4 && y>0.1 && y<0.4)
-	            // {
-	            // 	rho[i*n1+j] = 0.3;
-	            // }
-	            
-	            // if(x>0.3 && x<0.7 && y>0.3 && y<0.7)
-	            // {
-	            // 	rho[i*n1+j] = 0.3;
-	            // }
-
-	            // if(x>0.5 && x<0.8 && y>0.65 && y<0.9)
-	            // {
-	            // 	rho[i*n1+j] = 0.3;
-	            // }
-
-	            /* Exp2 DON'T TOUCH */
-	            // rho[i*n1+j]  = 0.45 * exp(-15*pow(x-0.3,2)-15*pow(y-0.3,2)); rho[i*n1+j] += 0.45 * exp(-30*pow(x-0.8,2)-30*pow(y-0.35,2)); rho[i*n1+j] += 0.45 * exp(-25*pow(x-0.5,2)-25*pow(y-0.75,2));
-
-
+	            rho[i*n1+j] =  fmax(0, 2 * exp(-15*pow(x-0.8,2)-15*pow(y-0.8,2)) - 1.6);
+	            rho[i*n1+j]+=  fmax(0, 2 * exp(-15*pow(x-0.2,2)-15*pow(y-0.7,2)) - 1.6);
+	            rho[i*n1+j]+=  fmax(0, 2 * exp(-15*pow(x-0.8,2)-15*pow(y-0.3,2)) - 1.6);
+	            rho[i*n1+j]+=  fmax(0, 2 * exp(-15*pow(x-0.2,2)-15*pow(y-0.2,2)) - 1.6);
 	        }
 	    }
 
@@ -95,15 +67,19 @@ public:
 	            double x=1.0*(j+0.5)/n1;
 	            double y=1.0*(i+0.5)/n2;
 
-	            // if(pow(x-0.7,2) + pow(y-0.7,2) < pow(0.1,2)){
-	            //     rho[i*n1+j] = 0.4;    
-	            // }else{
-	            //     rho[i*n1+j] = 0;
-	            // }
+	            // experiment 1
+	            // rho[i*n1+j] =  fmax(0, 2*exp(-5*pow(x-0.7,2)-5*pow(y-0.7,2)) - 1.8);
+
+	            // experiment 2
+	            // rho[i*n1+j]  = fmax(0, 2*exp(-15*pow(x-0.2,2)-15*pow(y-0.5,2)) - 1.8);
+
+	            // experiment 3
+	            rho[i*n1+j] =  fmax(0, 2 * exp(-15*pow(x-0.2,2)-15*pow(y-0.7,2)) - 1.8);
+				rho[i*n1+j]+=  fmax(0, 2 * exp(-15*pow(x-0.2,2)-15*pow(y-0.2,2)) - 1.8);
 
 	            // if(fabs(x-0.5)<0.1 && fabs(y-0.5)<0.1) rho[i*n1+j] = 1;
-	            rho[i*n1+j] = 4*fmax(0, 0.6 * exp(-45*pow(x-0.2,2)-45*pow(y-0.7,2)) - 0.5);
-	            rho[i*n1+j]+= 4*fmax(0, 0.6 * exp(-45*pow(x-0.2,2)-45*pow(y-0.2,2)) - 0.5);
+	            // rho[i*n1+j] = 4*fmax(0, 0.6 * exp(-45*pow(x-0.7,2)-45*pow(y-0.7,2)) - 0.5);
+	            // rho[i*n1+j]+= 4*fmax(0, 0.6 * exp(-45*pow(x-0.2,2)-45*pow(y-0.2,2)) - 0.5);
 
 	            /* exp1 */
 	            // rho[i*n1+j]  = 15*fmax(0.1-pow(x-0.6,2)-pow(y-0.6,2),0);

@@ -1,10 +1,21 @@
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 from matplotlib import animation
 import numpy as np
 import csv
 import dask.dataframe as dd
 import pandas as pd
 from numpy.ma import masked_array
+
+
+import matplotlib.patches as patches
+
+def get_circle(center, radius):
+    angle = np.linspace( 0 , 2 * np.pi , 150 )     
+    x = radius * n1 * np.cos( angle ) + center[0] * n1 - 0.5
+    y = radius * n2 * np.sin( angle ) + center[1] * n2 - 0.5
+    return x,y
+
 
 directory="./data"
 
@@ -56,28 +67,35 @@ import sys
 
 type_video = sys.argv[1]
 
-N = 5
-tlist = [0,0.25,0.5,0.75,1.0]
+N = 6
+tlist = [0,0.25,0.5,0.55,0.65,1.0]
 
 def save_plot_contour(visual=True, SIR=True, title_type=0):
-    fig, ax = plt.subplots(4,N,figsize=(9,6))
+    fig, ax = plt.subplots(4,N,figsize=(8,6))
 
-    fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
+    fig.subplots_adjust(bottom=0, top=0.95, left=0, right=1, wspace=0, hspace=0.144)
 
     vmax0 = np.max(rho0)
-    print("vmax0 : ",vmax0)
-    vmax0 = 0.8
     vmax1 = np.max(rho1)
-    vmax2 = np.max(rho2)
+    vmax2 = np.max(rho2*2)
+    vmax3 = np.max(rho3*0.8)
 
     vmax = max(vmax0, vmax1, vmax2)
 
     for i in range(N):
         n = int((nt-1) * tlist[i]);
-        ax[0,i].imshow(rho0[n], cmap='inferno').set_clim(0, vmax0)
-        ax[1,i].imshow(rho1[n], cmap='inferno').set_clim(0, vmax0)
-        ax[2,i].imshow(rho2[n], cmap='inferno').set_clim(0, vmax0)
-        ax[3,i].imshow(rho3[n], cmap='inferno').set_clim(0, vmax0)
+        ax[0,i].imshow(rho0[n]+obstacle[0]*100, cmap='inferno').set_clim(0, vmax0)
+        ax[1,i].imshow(rho1[n]+obstacle[0]*100, cmap='inferno').set_clim(0, vmax1)
+        ax[2,i].imshow(rho2[n]+obstacle[0]*100, cmap='inferno').set_clim(0, vmax2)
+        ax[3,i].imshow(rho3[n]+obstacle[0]*100, cmap='inferno').set_clim(0, vmax3)
+
+        # factory area
+        x,y = get_circle((0.5,0.5), 0.075)
+        ax[3,i].plot( x, y , 'tab:green') 
+        x,y = get_circle((0.5,0.2), 0.075)
+        ax[3,i].plot( x, y , 'tab:green') 
+        x,y = get_circle((0.5,0.8), 0.075)
+        ax[3,i].plot( x, y , 'tab:green') 
 
 
         ax[0,i].set_axis_off()
@@ -86,10 +104,10 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
         ax[3,i].set_axis_off()
 
         if title_type == 0:
-            ax[0,i].set_title("t = {:.2f}\nsum = {:.3f}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
-            ax[1,i].set_title("sum = {:.3f}".format(np.sum(rho1[n])/(n1*n2)))
-            ax[2,i].set_title("sum = {:.3f}".format(np.sum(rho2[n])/(n1*n2)))
-            # ax[3,i].set_title("sum = {:.3f}".format(np.sum(rho3[n])/(n1*n2)))
+            ax[0,i].set_title("t = {:.2f}\nsum = {:.3e}".format(1.0*n/(nt-1), np.sum(rho0[n])/(n1*n2)))
+            ax[1,i].set_title("sum = {:.2e}".format(np.sum(rho1[n])/(n1*n2)))
+            ax[2,i].set_title("sum = {:.2e}".format(np.sum(rho2[n])/(n1*n2)))
+            ax[3,i].set_title("sum = {:.2e}".format(np.sum(rho3[n])/(n1*n2)))
             ax[3,i].set_title("max = {:.3f}".format(np.max(rho3[n])))
             plt.savefig("figures/SIR-with-mass.png")
         elif title_type == 1:
@@ -104,11 +122,57 @@ def save_plot_contour(visual=True, SIR=True, title_type=0):
 
 
 
+def save_plot_initial_densities():
+    fig, ax = plt.subplots(1,2,figsize=(5,2.5))
+
+    fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
+
+    vmax0 = np.max(rho0)
+    vmax1 = np.max(rho1)
+    vmax2 = np.max(rho2*10)
+    vmax3 = np.max(rho3)
+
+    vmax = max(vmax0, vmax1, vmax2)
+
+    n = 0
+    ax[0].imshow(rho0[n], cmap='inferno',origin='lower').set_clim(0, vmax0)
+    ax[1].imshow(rho1[n], cmap='inferno',origin='lower').set_clim(0, vmax1)
+    # ax[2].imshow(rho2[n], cmap='inferno').set_clim(0, vmax2)
+    # ax[3].imshow(rho3[n], cmap='inferno').set_clim(0, vmax3)
+
+    # factory area
+    x,y = get_circle((0.5,0.5), 0.075)
+    ax[0].plot( x, y , 'tab:green') 
+    ax[1].plot( x, y , 'tab:green') 
+    x,y = get_circle((0.5,0.2), 0.075)
+    ax[0].plot( x, y , 'tab:green') 
+    ax[1].plot( x, y , 'tab:green') 
+    x,y = get_circle((0.5,0.8), 0.075)
+    ax[0].plot( x, y , 'tab:green') 
+    ax[1].plot( x, y , 'tab:green') 
+
+
+    ax[0].set_axis_off()
+    ax[1].set_axis_off()
+    # ax[2].set_axis_off()
+    # ax[3].set_axis_off()
+
+    ax[0].set_title("S")
+    ax[1].set_title("I")
+    # ax[2].set_title("R")
+    # ax[3].set_title("V")
+    plt.savefig("figures/SIR-initial-densities.png")
+    
+    plt.show()
+    plt.close();
+
+save_plot_initial_densities()
+
 def save_plot(visual=True, total=False):
 
-    fig, ax = plt.subplots(1,2,figsize=(8,3))
+    fig, ax = plt.subplots(1,2,figsize=(9,3))
 
-    fig.subplots_adjust(bottom=0.1, top=0.95, right=1, left=0.1, wspace=0.2, hspace=0.2)
+    fig.subplots_adjust(bottom=0.1, top=0.9, right=0.95, left=0.1, wspace=0.2, hspace=0.2)
 
     xx = np.linspace(0,1,nt)
     max0 = np.sum(rho0[0])
@@ -135,15 +199,16 @@ def save_plot(visual=True, total=False):
     X,Y = np.meshgrid(np.linspace(0.5/n1,1-0.5/n1,n2),np.linspace(0.5/n1,1-0.5/n1,n1))
 
     V_0[:,X-Y>0.5] = 1
-    r = 0.075
+    r = 0.1
 
     # ax[1].plot(xx,np.sum(np.sum(rho3[:,:,:n1//2],axis=1),axis=1)/(n1*n2),label="V left")
     # ax[1].plot(xx,np.sum(np.sum(rho3[:,:,n1//2:],axis=1),axis=1)/(n1*n2),label="V right")
 
-    print(rho3[:,(X-0.3)**2+(Y-0.3)**2<r**2].shape)
-    ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.2)**2<r**2],axis=1)/(n1*n2),label="V bottom")
-    ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="V middle")
-    ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.8)**2<r**2],axis=1)/(n1*n2),label="V top")
+    # ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.2)**2<r**2],axis=1)/(n1*n2),label="V bottom")
+    # ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="V middle")
+    # ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.8)**2<r**2],axis=1)/(n1*n2),label="V top")
+
+    ax[1].plot(xx[:nt//2],np.sum(rho3[:nt//2,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="Factory")
 
     plt.legend(loc='upper right', framealpha=0.5)
     ax[0].grid()
@@ -153,31 +218,158 @@ def save_plot(visual=True, total=False):
         plt.show()
     plt.close()
 
-fig, ax = plt.subplots(1,N,figsize=(9,6))
 
-fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0, wspace=0, hspace=0.2)
 
-vmax = np.max(rho0+rho1+rho2)
+def save_plot_plots_for_rho_V_production_and_delivery(visual=True):
 
-for i in range(N):
-    n = int((nt-1) * tlist[i]);
-    ax[i].imshow(rho0[n]+rho1[n]+rho2[n], cmap='inferno').set_clim(0, vmax)
-    ax[i].set_axis_off()
-    ax[i].set_title("{:.4f}".format(np.max(rho0[n]+rho1[n]+rho2[n])))
+    fig, ax = plt.subplots(1,1,figsize=(5,3))
+
+    fig.subplots_adjust(bottom=0.15, top=0.98, right=0.97, left=0.2, wspace=0.3, hspace=0.3)
+    xx = np.linspace(0,1,nt)
+    directory1 = "./exp2-data/data-no-obs"
+    rho00 = open_csv("{}/rho0.csv".format(directory1),nt,n1,n2)
+    rho10 = open_csv("{}/rho1.csv".format(directory1),nt,n1,n2)
+    rho20 = open_csv("{}/rho2.csv".format(directory1),nt,n1,n2)
+    rho30 = open_csv("{}/rho3.csv".format(directory1),nt,n1,n2)
+
+
+    X,Y = np.meshgrid(np.linspace(0.5/n1,1-0.5/n1,n2),np.linspace(0.5/n1,1-0.5/n1,n1))
+    r = 0.1
+
+    ax.plot(xx[:nt//2],np.sum(rho30[:nt//2,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="Without obstacle")
+    ax.plot(xx[:nt//2],np.sum(rho3[:nt//2,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="With obstacle")
     
-plt.show()
-plt.close();
+    ax.legend(loc='upper left', framealpha=0.5)
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+    ax.grid()
+    ax.set_xlabel("Time $t$")
 
-save_plot_contour(visual=True, SIR=True, title_type = 0)
+    ax.set_ylabel("Total mass of produced vaccines")
+
+    plt.savefig("figures/exp2-comparison-plots1.eps")
+    plt.show()
+
+    fig, ax = plt.subplots(1,1,figsize=(5,3))
+
+    fig.subplots_adjust(bottom=0.15, top=0.98, right=0.97, left=0.2, wspace=0.3, hspace=0.3)
+    xx = np.linspace(0,1,nt)
+    directory1 = "./exp2-data/data-no-obs"
+    rho00 = open_csv("{}/rho0.csv".format(directory1),nt,n1,n2)
+    rho10 = open_csv("{}/rho1.csv".format(directory1),nt,n1,n2)
+    rho20 = open_csv("{}/rho2.csv".format(directory1),nt,n1,n2)
+    rho30 = open_csv("{}/rho3.csv".format(directory1),nt,n1,n2)
+
+
+    X,Y = np.meshgrid(np.linspace(0.5/n1,1-0.5/n1,n2),np.linspace(0.5/n1,1-0.5/n1,n1))
+    r = 0.1
+
+    ax.plot(xx[nt//2:],np.sum(np.sum(rho30[nt//2:,:,:n1//2-20],axis=1),axis=1)/(n1*n2),'--',label="Left without obstacle")
+    ax.plot(xx[nt//2:],np.sum(np.sum(rho3[nt//2:,:,:n1//2-20],axis=1),axis=1)/(n1*n2),label="Left with obstacle")
+    ax.plot(xx[nt//2:],np.sum(np.sum(rho30[nt//2:,:,n1//2+20:],axis=1),axis=1)/(n1*n2),'--',label="Right without obstacle")
+    ax.plot(xx[nt//2:],np.sum(np.sum(rho3[nt//2:,:,n1//2+20:],axis=1),axis=1)/(n1*n2),label="Right with obstacle")
+    
+    ax.legend(loc='lower right', framealpha=0.5)
+    ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
+    ax.grid()
+    ax.set_xlabel("Time $t$")
+
+    ax.set_ylabel("Total mass of delivered vaccines")
+
+    plt.savefig("figures/exp2-comparison-plots2.eps")
+    plt.show()
+    plt.close()
+
+save_plot_plots_for_rho_V_production_and_delivery()
+
+def save_plot2(visual=True, total=False):
+
+    directory0 = "data"
+    rho01 = open_csv("{}/rho0.csv".format(directory0),nt,n1,n2)
+    rho11 = open_csv("{}/rho1.csv".format(directory0),nt,n1,n2)
+    rho21 = open_csv("{}/rho2.csv".format(directory0),nt,n1,n2)
+    rho31 = open_csv("{}/rho3.csv".format(directory0),nt,n1,n2)
+
+    directory1 = "data-large"
+    rho00 = open_csv("{}/rho0.csv".format(directory1),nt,n1,n2)
+    rho10 = open_csv("{}/rho1.csv".format(directory1),nt,n1,n2)
+    rho20 = open_csv("{}/rho2.csv".format(directory1),nt,n1,n2)
+    rho30 = open_csv("{}/rho3.csv".format(directory1),nt,n1,n2)
+
+    fig, ax = plt.subplots(1,4,figsize=(15,3))
+    fig.subplots_adjust(bottom=0.15, top=0.9, left=0.08, right=0.99, wspace=0.3, hspace=0.2)
+
+    xx = np.linspace(0,1,nt)
+    max0 = np.sum(rho0[0])
+    yy01 = np.sum(np.sum(rho01,axis=1),axis=1)/(n1*n2)
+    yy11 = np.sum(np.sum(rho11,axis=1),axis=1)/(n1*n2)
+    yy21 = np.sum(np.sum(rho21,axis=1),axis=1)/(n1*n2)
+    yy31 = np.sum(np.sum(rho31,axis=1),axis=1)/(n1*n2)
+
+    yy00 = np.sum(np.sum(rho00,axis=1),axis=1)/(n1*n2)
+    yy10 = np.sum(np.sum(rho10,axis=1),axis=1)/(n1*n2)
+    yy20 = np.sum(np.sum(rho20,axis=1),axis=1)/(n1*n2)
+    yy30 = np.sum(np.sum(rho30,axis=1),axis=1)/(n1*n2)
+
+    # ax.plot(xx,yy0,'.-',label="S")
+    # ax.plot(xx,yy1,'.-',label="I")
+
+    ax[0].plot(xx,yy01,label="Simulation 1")
+    ax[0].plot(xx,yy00,label="Simulation 2")
+
+    ax[1].plot(xx,yy11,label="Simulation 1")
+    ax[1].plot(xx,yy10,label="Simulation 2")
+
+    ax[2].plot(xx,yy21,label="Simulation 1")
+    ax[2].plot(xx,yy20,label="Simulation 2")
+
+    ax[0].set_ylabel("The Total Mass of Densities")
+    for k in range(4):
+        ax[k].set_xlabel("Time")
+        
+    ax[0].set_title("S")
+    ax[1].set_title("I")
+    ax[2].set_title("R")
+    ax[3].set_title("V")
+        
+
+    V_0 = np.zeros_like(rho3)
+    V_1 = np.zeros_like(rho3)
+
+    X,Y = np.meshgrid(np.linspace(0.5/n1,1-0.5/n1,n2),np.linspace(0.5/n1,1-0.5/n1,n1))
+
+    V_0[:,X-Y>0.5] = 1
+    r = 0.1
+    for k in range(4):
+        ax[k].yaxis.set_major_formatter(mtick.FormatStrFormatter('%.2e'))
+
+    # ax[1].plot(xx,np.sum(np.sum(rho3[:,:,:n1//2],axis=1),axis=1)/(n1*n2),label="V left")
+    # ax[1].plot(xx,np.sum(np.sum(rho3[:,:,n1//2:],axis=1),axis=1)/(n1*n2),label="V right")
+
+    # ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.2)**2<r**2],axis=1)/(n1*n2),label="V bottom")
+    # ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="V middle")
+    # ax[1].plot(xx,np.sum(rho3[:,(X-0.5)**2+(Y-0.8)**2<r**2],axis=1)/(n1*n2),label="V top")
+
+    ax[3].plot(xx[:nt//2],np.sum(rho31[:nt//2,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="Simulation 1")
+    ax[3].plot(xx[:nt//2],np.sum(rho30[:nt//2,(X-0.5)**2+(Y-0.5)**2<r**2],axis=1)/(n1*n2),label="Simulation 2")
+
+    # plotting all
+    # ax[3].plot(xx,yy31,label="Sim 1")
+    # ax[3].plot(xx,yy30,label="Sim 2")
+
+    ax[0].legend(loc='lower left', framealpha=0.5)
+    ax[1].legend(loc='lower right', framealpha=0.5)
+    ax[2].legend(loc='upper left', framealpha=0.5)
+    ax[3].legend(loc='upper left', framealpha=0.5)
+    for k in range(4):
+        ax[k].grid()
+    plt.savefig("figures/SIR-plot2.eps")
+    plt.show()
+    plt.close()
+
+save_plot_contour(visual=True, SIR=True, title_type = 1)
 save_plot(visual=True,  total=True)
+# save_plot2(visual=True,  total=True)
 
-import matplotlib.patches as patches
-
-def get_circle(center, radius):
-    angle = np.linspace( 0 , 2 * np.pi , 150 )     
-    x = radius * n1 * np.cos( angle ) + center[0] * n1 - 0.5
-    y = radius * n2 * np.sin( angle ) + center[1] * n2 - 0.5
-    return x,y
 def get_rect(x,y,w,h):
     return x*n1-0.5-w*n1, y*n2-0.5-h*n2, w*n1*2, h*n2*2
 def save_animation():
@@ -195,11 +387,11 @@ def save_animation():
     angle = np.linspace( 0 , 2 * np.pi , 150 ) 
  
     # factory area
-    x,y = get_circle((0.5,0.5), 0.1)
+    x,y = get_circle((0.5,0.5), 0.075)
     ax[3].plot( x, y , 'tab:green') 
-    x,y = get_circle((0.5,0.2), 0.1)
+    x,y = get_circle((0.5,0.2), 0.075)
     ax[3].plot( x, y , 'tab:green') 
-    x,y = get_circle((0.5,0.8), 0.1)
+    x,y = get_circle((0.5,0.8), 0.075)
     ax[3].plot( x, y , 'tab:green')
 
     ax[0].set_axis_off()
@@ -240,7 +432,7 @@ def save_animation():
         # cax0.set_clim(0, vmax)
         cax0.set_clim(0, vmax0)
         cax1.set_clim(0, vmax1)
-        cax2.set_clim(0, vmax0)
+        cax2.set_clim(0, vmax2)
         cax3.set_clim(0, vmax3*0.99)
 
         
@@ -261,7 +453,3 @@ def save_animation():
     anim.save("video.mp4", fps=10)
 
 save_animation()
-
-
-
-print(np.max(rho0[n]+rho1[n]+rho2[n]))

@@ -20,8 +20,8 @@ COMPILE_COMMAND := $(CC) $(CFLAGS) $(FFTWFLAG) $(OPENCVFLAG) $(OPENMPFLAG)
  
 OUTPUT := SIR
  
-all: SIR.cpp
-	$(COMPILE_COMMAND) -o $(OUTPUT) SIR.cpp
+all: ./lib/main.cpp
+	$(COMPILE_COMMAND) -o $(OUTPUT) ./lib/main.cpp
 
 clean:
 	rm -f *.o $(OUTPUT).*

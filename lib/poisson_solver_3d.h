@@ -57,7 +57,7 @@ public:
 		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
 		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
 		        	// double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
-		            double negativeLaplacian = tpart;
+		            double negativeLaplacian = xpart+ypart+tpart;
 		            kernel[n*n1*n2+i*n1+j]   = negativeLaplacian;
 		        }
 		    }
@@ -65,35 +65,7 @@ public:
 		    
 	}
 
-	void perform_inverse_laplacian(const double c, const double eta){
-
-		for(int i=0;i<n1*n2*nt;++i) workspace[i] = u[i];
-
-		fftw_execute(planIn);
-
-		double cval = c;
-
-		for(int n=0;n<nt;++n){
-			for(int i=0;i<n2;++i){
-				for(int j=0;j<n1;++j){
-					double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
-		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-
-		        	double val = cval*cval + (1 + 2*cval*eta) * (xpart + ypart) + eta * eta * ( xpart*xpart + ypart*ypart ) + kernel[n*n1*n2+i*n1+j];
-					if(val==0){
-						workspace[n*n1*n2+i*n1+j]=0;	
-					}else{
-						workspace[n*n1*n2+i*n1+j]/=8*(n1)*(n2)*(nt)*val;
-					}
-				}
-			}
-		}
-
-		fftw_execute(planOut);
-	}
-
-
-	void perform_inverse_laplacian(const double beta, const double* rho, const double eta){
+	void perform_inverse_laplacian(){
 
 		for(int i=0;i<n1*n2*nt;++i) workspace[i] = u[i];
 
@@ -102,36 +74,7 @@ public:
 		for(int n=0;n<nt;++n){
 			for(int i=0;i<n2;++i){
 				for(int j=0;j<n1;++j){
-					double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
-		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-		        	// double cval  = beta * rho[n*n1*n2+i*n1+j]; 
-		        	double cval  = 0; 
-		        	double val = cval*cval + (1 + 2*cval*eta) * (xpart + ypart) + kernel[n*n1*n2+i*n1+j];
-					if(val==0){
-						workspace[n*n1*n2+i*n1+j]=0;	
-					}else{
-						workspace[n*n1*n2+i*n1+j]/=8*(n1)*(n2)*(nt)*val;
-					}
-				}
-			}
-		}
-		fftw_execute(planOut);
-	}
-
-	void perform_inverse_laplacian(const double beta, const double gamma, const double* rho0, const double eta){
-
-		for(int i=0;i<n1*n2*nt;++i) workspace[i] = u[i];
-
-		fftw_execute(planIn);
-
-		for(int n=0;n<nt;++n){
-			for(int i=0;i<n2;++i){
-				for(int j=0;j<n1;++j){
-					double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
-		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-		        	// double cval  = beta * rho0[n*n1*n2+i*n1+j] + gamma;
-		        	double cval  = 0;
-		        	double val = cval*cval + (1 + 2*cval*eta) * (xpart + ypart) + kernel[n*n1*n2+i*n1+j];
+		        	double val = kernel[n*n1*n2+i*n1+j];
 					if(val==0){
 						workspace[n*n1*n2+i*n1+j]=0;	
 					}else{

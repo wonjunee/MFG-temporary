@@ -22,7 +22,7 @@ public:
     poisson_solver(){
         workspace=NULL;
     }
-    poisson_solver(int n1, int n2, int nt, double eta=1) {
+    poisson_solver(const int n1, const int n2, const int nt, const double eta=1) {
         this->n1=n1;
         this->n2=n2;
         this->nt=nt;
@@ -101,8 +101,8 @@ public:
     fftw_plan planIn;
     fftw_plan planOut;
     double *workspace;
-    double *u;
-    double *kernel;
+    unique_ptr<double[]> u;
+    unique_ptr<double[]> kernel;
 
     int n1;
     int n2;
@@ -110,9 +110,9 @@ public:
     double eta;
 
     poisson_solver_DST(){
-        workspace=NULL; u=NULL; kernel=NULL;
+        workspace=NULL;
     }
-    poisson_solver_DST(int n1, int n2, int nt, double eta=1) {
+    poisson_solver_DST(const int n1, const int n2, const int nt, const double eta=1) {
         this->n1=n1;
         this->n2=n2;
         this->nt=nt;
@@ -124,15 +124,14 @@ public:
         planIn =fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_RODFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
         planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_RODFT01, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
 
-        u=new double[n1*n2*nt];
-        kernel=new double[n1*n2*nt];
+        u      = make_unique<double[]>(n1*n2*nt);
+        kernel = make_unique<double[]>(n1*n2*nt);
+
 
         create_negative_laplacian_kernel_3d();
     }
 
     ~poisson_solver_DST(){
-        delete[] u;
-        delete[] kernel;
         fftw_free(workspace);
         fftw_destroy_plan(planIn);
         fftw_destroy_plan(planOut);
@@ -185,8 +184,8 @@ public:
     fftw_plan planIn;
     fftw_plan planOut;
     double *workspace;
-    double *u;
-    double *kernel;
+    unique_ptr<double[]> u;
+    unique_ptr<double[]> kernel;
 
     int n1;
     int n2;
@@ -194,9 +193,9 @@ public:
     double eta;
 
     poisson_solver_2d(){
-        workspace=NULL; u=NULL; kernel=NULL;
+        workspace=NULL;
     }
-    poisson_solver_2d(int n1, int n2, double eta=1) {
+    poisson_solver_2d(const int n1, const int n2, const double eta=1) {
         this->n1=n1;
         this->n2=n2;
 
@@ -210,15 +209,13 @@ public:
         planIn =fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
         planOut=fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
 
-        u=new double[n1*n2];
-        kernel=new double[n1*n2];
+        u      = make_unique<double[]>(n1*n2);
+    	kernel = make_unique<double[]>(n1*n2);
 
         create_negative_laplacian_kernel_2d();
     }
 
     ~poisson_solver_2d(){
-        delete[] u;
-        delete[] kernel;
         fftw_free(workspace);
         fftw_destroy_plan(planIn);
         fftw_destroy_plan(planOut);
@@ -240,7 +237,7 @@ public:
 
     void perform_inverse_laplacian(const double c){
 
-        for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
+    	memcpy(workspace, u.get(), n1*n2*sizeof(double));
 
         fftw_execute(planIn);
 
@@ -258,7 +255,7 @@ public:
 
     void perform_inverse_laplacian_phiT(const double c){
 
-        for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
+    	memcpy(workspace, u.get(), n1*n2*sizeof(double));
 
         fftw_execute(planIn);
 
@@ -275,12 +272,7 @@ public:
     }
 
     void perform_convolution(const double* rho, const double var){
-        // memcpy(workspace, rho, n1*n2*sizeof(double));
-
-        for(int i=0;i<n1*n2;++i){
-            workspace[i] = rho[i];
-        }
-
+        memcpy(workspace, rho, n1*n2*sizeof(double));
         fftw_execute(planIn);
         for(int i=0;i<n1*n2;++i) workspace[i] *= exp(-kernel[i]*var*var) / (4*n1*n2);
         fftw_execute(planOut);
@@ -309,7 +301,7 @@ public:
         fftw_execute(planOut);
     }
 
-    void solve_heat_equation(double* rho, double tau){
+    void solve_heat_equation(double* rho, const double tau){
         memcpy(workspace,rho,n1*n2*sizeof(double));
 
         fftw_execute(planIn);
@@ -328,9 +320,6 @@ public:
 
         memcpy(rho,workspace,n1*n2*sizeof(double));
     }
-
-
-
 };
 
 #endif

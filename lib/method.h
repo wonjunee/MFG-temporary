@@ -195,7 +195,6 @@ public:
             //     break;
             // }
         }
-		
     }
 
     inline double calculate_grad_mx(const shared_ptr<const double[]>& mxTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){

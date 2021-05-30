@@ -8,9 +8,11 @@
 #include <cstring>
 // #include <omp.h> // parallelization
 #include <fftw3.h>
+#include <memory>
 // #include "poisson_solver.h"
 #include "poisson_solver_3d.h"
 #include "helper.h"
+
 
 const double LARGE_NUMBER = 99999999999;    
 
@@ -33,7 +35,8 @@ public:
     int max_iteration;
     double tolerance;
 
-    double* mx;
+    // double* mx;
+    unique_ptr<double[]> mx;
     double* my;
     double* phi;
     double* phitmp;
@@ -45,20 +48,17 @@ public:
 
     double M0;
 
-    poisson_solver* fftps;
-    poisson_solver_DST* fftpsDST;
-    poisson_solver_2d* fftps2d;
+    unique_ptr<poisson_solver> fftps;
+    unique_ptr<poisson_solver_DST> fftpsDST;
+    unique_ptr<poisson_solver_2d> fftps2d;
     // ------------------------
 
     Method(){
         phitmp=nullptr;
         rhotmp=nullptr;
-        mx=nullptr;
+        // mx=nullptr;
         my=nullptr;
         phi=nullptr;
-        
-        fftps=nullptr;
-        fftps2d=nullptr;
     }
 
     Method(int n1, int n2, int nt, double tau, double sigma, int max_iteration, double tolerance){
@@ -72,7 +72,8 @@ public:
         this->tau  =tau;
         this->sigma=sigma;
 
-        mx      = new double[n1*n2*nt];
+        // mx      = new double[n1*n2*nt];
+        mx = make_unique<double[]>(n1*n2*nt);
         my      = new double[n1*n2*nt];
         phi     = new double[n1*n2*nt];
         phitmp  = new double[n1*n2*nt];
@@ -80,7 +81,7 @@ public:
 
         p_ = 1; // power
 
-        memset(mx,      0, n1*n2*nt*sizeof(double));
+        memset(mx.get(),      0, n1*n2*nt*sizeof(double));
         memset(my,      0, n1*n2*nt*sizeof(double));
         memset(phi,     0, n1*n2*nt*sizeof(double));
         memset(phitmp,  0, n1*n2*nt*sizeof(double));
@@ -88,22 +89,20 @@ public:
         clock_t t;
         t = clock();
             
-        fftps    = new poisson_solver(n1,n2,nt);
-        fftpsDST = new poisson_solver_DST(n1,n2,nt);
-        fftps2d = new poisson_solver_2d(n1,n2);
-
+        fftps    = make_unique<poisson_solver>(n1,n2,nt);
+        fftpsDST = make_unique<poisson_solver_DST>(n1,n2,nt);
+        fftps2d  = make_unique<poisson_solver_2d>(n1,n2);
+        
         t = clock() - t;
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
     }
 
     ~Method(){
-        delete[] mx;
+        // delete[] mx;
         delete[] my;
         delete[] rhotmp;
         delete[] phitmp;
-        delete[] phi;
-        delete fftps;
-        delete fftps2d;        
+        delete[] phi;       
     }
 
     void setup_indices(int& im, int& ip, int& jm, int& jp, const int i, const int j){
@@ -189,8 +188,8 @@ public:
                         // double top    = pow(rhoval, p_+1) * (rhoval - rhotmpval - tau * Dtphi) - 0.5 * p_ * tau * mval * mval;
                         // double bottom = pow(rhoval, p_) * ((p_+2) * rhoval - (p_+1) * (rhotmpval + tau * Dtphi));
 
-                        double top    =  - 0.5 * p_ * mval * mval / (pow(rhoval, p_+1)+1e-5) - Dtphi + rhoval/tau - rhotmpval/tau;
-                        double bottom =    0.5 * p_ * (p_+1) * mval * mval / (pow(rhoval, p_+2)+1e-5) + 1.0/tau;
+                        double top    =  - 0.5 * p_ * mval * mval / (pow(rhoval, p_+1)+1e-6) - Dtphi + rhoval/tau - rhotmpval/tau;
+                        double bottom =    0.5 * p_ * (p_+1) * mval * mval / (pow(rhoval, p_+2)+1e-6) + 1.0/tau;
 
                         double eval = top/bottom;
 

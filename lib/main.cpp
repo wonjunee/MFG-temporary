@@ -62,7 +62,7 @@ int main(int argc, char **argv)
     int max_iteration=stoi(argv[7]);
     int skip=stoi(argv[8]);
     
-    double base=0.001;
+    double base=0.01;
 
     double* rho = new double[n1*n2*nt];
 

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # CC := g++
 CC := g++ # typical homebrew compiler name 
 
@@ -8,7 +10,7 @@ ifdef PHYSICELL_CPP
 endif
 
  
-CFLAGS     :=  -O3 -std=c++11 -I./lib
+CFLAGS     :=  -O3 -std=c++17 -I./lib
 # FFTW library
 FFTWFLAG   := -I/usr/local/include  -L/usr/local/lib -lfftw3
 # opencv library: for image

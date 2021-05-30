@@ -13,82 +13,81 @@
 #include "poisson_solver_3d.h"
 #include "helper.h"
 
-
-const double LARGE_NUMBER = 99999999999;    
+static const double LARGE_NUMBER = 99999999999;    
 
 class Method{
 public:
-    int n1;
-    int n2;
-    int nt;
+    // member variables
+        int n1;
+        int n2;
+        int nt;
 
-    int im;
-    int ip;
-    int jm;
-    int jp;
+        int im;
+        int ip;
+        int jm;
+        int jp;
 
-    double tau;
-    double sigma;
+        double tau;
+        double sigma;
 
-    double p_;
+        double p_;
 
-    int max_iteration;
-    double tolerance;
+        int max_iteration;
+        double tolerance;
 
-    // double* mx;
-    unique_ptr<double[]> mx;
-    double* my;
-    double* phi;
-    double* phitmp;
-    double* rhotmp;
+        double energy;
+        double previous_energy;
+        double previous_dual;
 
-    double energy;
-    double previous_energy;
-    double previous_dual;
+        double M0;
 
-    double M0;
+        static unique_ptr<poisson_solver>     fftps;
+        static unique_ptr<poisson_solver_DST> fftpsDST;
+        static unique_ptr<poisson_solver_2d>  fftps2d;
 
-    unique_ptr<poisson_solver> fftps;
-    unique_ptr<poisson_solver_DST> fftpsDST;
-    unique_ptr<poisson_solver_2d> fftps2d;
-    // ------------------------
+        // dynamical arrays
+        shared_ptr<double[]> mx;
+        shared_ptr<double[]> my;
+        shared_ptr<double[]> phi;
+        shared_ptr<double[]> phitmp;
+        shared_ptr<double[]> rhotmp;
 
-    Method(){
-        phitmp=nullptr;
-        rhotmp=nullptr;
-        // mx=nullptr;
-        my=nullptr;
-        phi=nullptr;
-    }
+    // default constructor
+    Method(){}
 
-    Method(int n1, int n2, int nt, double tau, double sigma, int max_iteration, double tolerance){
+    // constructor
+    Method(const int n1, const int n2, const int nt, const double tau, const double sigma, const int max_iteration, const double tolerance){
 
-        this->n1=n1;
-        this->n2=n2;
-        this->nt=nt;
-        this->max_iteration=max_iteration;
-        this->tolerance=tolerance;
+        this->n1=n1;                        // grid size x-axis
+        this->n2=n2;                        // grid size y-axis
+        this->nt=nt;                        // grid size t-axis
+        this->max_iteration=max_iteration;  // the maximum iteration of PDHG
+        this->tolerance    =tolerance;      // the tolerance of the PDHG
+        this->tau          =tau;            // the step size for the primal variables (rho, m)
+        this->sigma        =sigma;          // the step size for the dual variable (phi)
 
-        this->tau  =tau;
-        this->sigma=sigma;
+        // initializing m, phi, rhotmp
+        mx      = shared_ptr<double[]>(new double[n1*n2*nt]);
+        my      = shared_ptr<double[]>(new double[n1*n2*nt]);
+        phi     = shared_ptr<double[]>(new double[n1*n2*nt]);
+        phitmp  = shared_ptr<double[]>(new double[n1*n2*nt]);
+        rhotmp  = shared_ptr<double[]>(new double[n1*n2*nt]);
 
-        // mx      = new double[n1*n2*nt];
-        mx = make_unique<double[]>(n1*n2*nt);
-        my      = new double[n1*n2*nt];
-        phi     = new double[n1*n2*nt];
-        phitmp  = new double[n1*n2*nt];
-        rhotmp  = new double[n1*n2*nt];
+        // initialize the arrays to be 0
+        memset(mx.get(),      0, n1*n2*nt*sizeof(double));
+        memset(my.get(),      0, n1*n2*nt*sizeof(double));
+        memset(phi.get(),     0, n1*n2*nt*sizeof(double));
+        memset(phitmp.get(),  0, n1*n2*nt*sizeof(double));
+        memset(rhotmp.get(),  0, n1*n2*nt*sizeof(double));
 
+        // this sets the power of the V1 function.
         p_ = 1; // power
 
-        memset(mx.get(),      0, n1*n2*nt*sizeof(double));
-        memset(my,      0, n1*n2*nt*sizeof(double));
-        memset(phi,     0, n1*n2*nt*sizeof(double));
-        memset(phitmp,  0, n1*n2*nt*sizeof(double));
-
+        // timing the initialization of FFT
         clock_t t;
         t = clock();
             
+        // initialize 3d fftps and 2d fftps
         fftps    = make_unique<poisson_solver>(n1,n2,nt);
         fftpsDST = make_unique<poisson_solver_DST>(n1,n2,nt);
         fftps2d  = make_unique<poisson_solver_2d>(n1,n2);
@@ -97,15 +96,10 @@ public:
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
     }
 
-    ~Method(){
-        // delete[] mx;
-        delete[] my;
-        delete[] rhotmp;
-        delete[] phitmp;
-        delete[] phi;       
-    }
+    // Destructor
+    ~Method(){     }
 
-    void setup_indices(int& im, int& ip, int& jm, int& jp, const int i, const int j){
+    inline void setup_indices(int& im, int& ip, int& jm, int& jp, const int i, const int j){
         im = fmax(0,i-1);
         ip = fmin(n2-1,i+1);
 
@@ -113,10 +107,9 @@ public:
         jp = fmin(n1-1,j+1);
     }
 
-    void perform_upwind_scheme(double& muxp, double& muxm, double& muyp, double& muym, const double* phi, const int i, const int j){
+    inline void perform_upwind_scheme(double& muxp, double& muxm, double& muyp, double& muym, const shared_ptr<const double[]>& phi, const int i, const int j){
 
         setup_indices(im,ip,jm,jp,i,j);
-
         muxp = 1.0 * n1 * (phi[i*n1+jp] - phi[i*n1+j]);
         muxm = 1.0 * n1 * (phi[i*n1+j] - phi[i*n1+jm]);
         muyp = 1.0 * n2 * (phi[ip*n1+j] - phi[i*n1+j]);
@@ -124,7 +117,7 @@ public:
     }
 
     // centered difference
-    void update_m(double* mx, double* my, const double* rho, const double* phi){
+    void update_m(shared_ptr<double[]>& mx, shared_ptr<double[]>& my, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
 
         int im,ip,jm,jp;
 
@@ -151,7 +144,7 @@ public:
         Update rho
     */
 
-    void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const double* mx, const double* my, const double* phi){
+    inline void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& phi){
 
         double mxvalue, myvalue;
         int im,ip,jm,jp;
@@ -166,7 +159,7 @@ public:
         else    Dtphi=0;
     }
 
-    void update_rho(double* rho, const double* rhotmp, const double* mx, const double* my){
+    void update_rho(const shared_ptr<double[]>& rho, const shared_ptr<const double[]>& rhotmp, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my){
         // Newton's method
         int max_iter = 50;
         double tol   = 1e-6;
@@ -188,8 +181,8 @@ public:
                         // double top    = pow(rhoval, p_+1) * (rhoval - rhotmpval - tau * Dtphi) - 0.5 * p_ * tau * mval * mval;
                         // double bottom = pow(rhoval, p_) * ((p_+2) * rhoval - (p_+1) * (rhotmpval + tau * Dtphi));
 
-                        double top    =  - 0.5 * p_ * mval * mval / (pow(rhoval, p_+1)+1e-6) - Dtphi + rhoval/tau - rhotmpval/tau;
-                        double bottom =    0.5 * p_ * (p_+1) * mval * mval / (pow(rhoval, p_+2)+1e-6) + 1.0/tau;
+                        double top    =  - 0.5 * p_ * mval * mval / (pow(rhoval, p_+1)+1e-8) - Dtphi + rhoval/tau - rhotmpval/tau;
+                        double bottom =    0.5 * p_ * (p_+1) * mval * mval / (pow(rhoval, p_+2)+1e-8) + 1.0/tau;
 
                         double eval = top/bottom;
 
@@ -205,22 +198,22 @@ public:
 		
     }
 
-    double calculate_grad_mx(const double* mxTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+    inline double calculate_grad_mx(const shared_ptr<const double[]>& mxTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
         return n1*(mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+jm]);
     }
 
-    double calculate_grad_my(const double* myTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+    inline double calculate_grad_my(const shared_ptr<const double[]>& myTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
         return n2*(myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+im*n1+j]);
     }
 
-    double calculate_dtrho(const double* rho, const int n, const int i, const int j){
+    inline double calculate_dtrho(const shared_ptr<const double[]>& rho, const int n, const int i, const int j){
     	double dtrho=0;
     	if(n==nt-1) dtrho=0;
         else        dtrho=1.0*nt*(rho[(n+1)*n1*n2+i*n1+j]-rho[(n)*n1*n2+i*n1+j]); 
         return dtrho;
     }   
 
-    double update_phi(const double* rho, const double* mx, const double* my){
+    double update_phi(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my){
 
         int n,ip,im,jp,jm,ind;
 
@@ -254,7 +247,7 @@ public:
     }
 
 
-    double calculate_energy(const double* rho, const double* mx, const double* my){
+    double calculate_energy(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my){
         double sum = 0;
 
         // TODO
@@ -294,7 +287,7 @@ public:
         printf("iter: %5d tau: %5.2f sigma: %5.2f energy: %10.4e rel error: %10.4e dual error: %10.4e\n", iterPDHG+1, tau, sigma, energy, error, sanity_value);
     }
 
-    void run(double* rho, int skip=1){
+    void run(const shared_ptr<double[]>& rho, int skip=1){
 
         previous_energy=1;
         previous_dual=1;
@@ -312,7 +305,7 @@ public:
 
 
             // update phi
-            memcpy(phitmp,phi,n1*n2*nt*sizeof(double));
+            memcpy(phitmp.get(),phi.get(),n1*n2*nt*sizeof(double));
             sanity_value  = update_phi(rho,mx,my);
             sanity_value_previous = sanity_value;
 
@@ -321,7 +314,7 @@ public:
             }
 
             // get the data before updates
-            memcpy(rhotmp,rho,n1*n2*nt*sizeof(double));
+            memcpy(rhotmp.get(),rho.get(),n1*n2*nt*sizeof(double));
 
             int skip2 = 100;
 
@@ -336,15 +329,18 @@ public:
 
             if((iterPDHG+1)%skip==0){
                 display_log(iterPDHG,  tau,  sigma,  energy,  error, sanity_value);
-                create_bin_file(rho, n1*n2*nt, "./data/rho.csv");
+                create_bin_file(rho.get(), n1*n2*nt, "./data/rho.csv");
             }
 
             if((iterPDHG>20 ) && (fabs(error)<tolerance)) break;
 
-            // memcpy(rhotmp,rho,n1*n2*nt*sizeof(double));
-            // fftpsDST->solve_heat_equation_with_bdry(rho, smooth_param);
-            // memcpy(&rho[0],    &rhotmp[0],    n1*n2*sizeof(double));
-            // memcpy(&rho[(nt-1)*n1*n2], &rhotmp[(nt-1)*n1*n2], n1*n2*sizeof(double));
+            if(false){ // smoothing the density using the heat equation
+                memcpy(rhotmp.get(),rho.get(),n1*n2*nt*sizeof(double));
+                fftpsDST->solve_heat_equation_with_bdry(rho.get(), smooth_param);
+                memcpy(&rho[0],    &rhotmp[0],    n1*n2*sizeof(double));
+                memcpy(&rho[(nt-1)*n1*n2], &rhotmp[(nt-1)*n1*n2], n1*n2*sizeof(double));    
+            }
+            
         }
 
         cout<<"The method is done!!"<<endl;
@@ -354,11 +350,11 @@ public:
         cout<<"Energy         : "<<energy<<endl;
         cout<<"Relative Error : "<<error<<endl;
     }
-
-
-
-
 }; // Method class
 
+// initializing static member variable
+unique_ptr<poisson_solver>     Method::fftps;
+unique_ptr<poisson_solver_DST> Method::fftpsDST;
+unique_ptr<poisson_solver_2d>  Method::fftps2d;
 
 #endif

@@ -11,8 +11,8 @@ public:
     fftw_plan planIn;
     fftw_plan planOut;
     double *workspace;
-    double *u;
-    double *kernel;
+    unique_ptr<double[]> u;
+    unique_ptr<double[]> kernel;
 
     int n1;
     int n2;
@@ -20,72 +20,70 @@ public:
     double eta;
 
     poisson_solver(){
-    	workspace=NULL; u=NULL; kernel=NULL;
+        workspace=NULL;
     }
     poisson_solver(int n1, int n2, int nt, double eta=1) {
-    	this->n1=n1;
-    	this->n2=n2;
-    	this->nt=nt;
+        this->n1=n1;
+        this->n2=n2;
+        this->nt=nt;
 
-    	this->eta=eta;
+        this->eta=eta;
 
         workspace =(double*) fftw_malloc(n1*n2*nt*sizeof(double));
 
-		planIn =fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
-    	planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
+        planIn =fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
+        planOut=fftw_plan_r2r_3d(nt, n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
 
-		u=new double[n1*n2*nt];
-        kernel=new double[n1*n2*nt];
+        u      = make_unique<double[]>(n1*n2*nt);
+        kernel = make_unique<double[]>(n1*n2*nt);
 
         create_negative_laplacian_kernel_2d();
     }
 
     ~poisson_solver(){
-		delete[] u;
-	    delete[] kernel;
-	    fftw_free(workspace);
-	    fftw_destroy_plan(planIn);
-	    fftw_destroy_plan(planOut);
-	}
+        fftw_free(workspace);
+        fftw_destroy_plan(planIn);
+        fftw_destroy_plan(planOut);
+    }
 
     void create_negative_laplacian_kernel_2d(){
-	    
-	    for(int n=0;n<nt;++n){
-	    	for(int i=0;i<n2;i++){
-		        for(int j=0;j<n1;j++){
-		            double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
-		        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-		        	double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
-		        	// double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
-		            double negativeLaplacian = xpart+ypart+tpart;
-		            kernel[n*n1*n2+i*n1+j]   = negativeLaplacian;
-		        }
-		    }
-	    }
-		    
-	}
+        
+        for(int n=0;n<nt;++n){
+            for(int i=0;i<n2;i++){
+                for(int j=0;j<n1;j++){
+                    double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
+                    double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
+                    double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n)/nt));  // DCT
+                    // double tpart = 2*nt*nt*(1-cos(M_PI*(1.0*n+1)/nt));// DST
+                    double negativeLaplacian = xpart+ypart+tpart;
+                    kernel[n*n1*n2+i*n1+j]   = negativeLaplacian;
+                }
+            }
+        }
+            
+    }
 
-	void perform_inverse_laplacian(){
+    void perform_inverse_laplacian(){
 
-		for(int i=0;i<n1*n2*nt;++i) workspace[i] = u[i];
+        for(int i=0;i<n1*n2*nt;++i) workspace[i] = u[i];
 
-		fftw_execute(planIn);
+        fftw_execute(planIn);
 
-		for(int n=0;n<nt;++n){
-			for(int i=0;i<n2;++i){
-				for(int j=0;j<n1;++j){
-		        	double val = kernel[n*n1*n2+i*n1+j];
-					if(val==0){
-						workspace[n*n1*n2+i*n1+j]=0;	
-					}else{
-						workspace[n*n1*n2+i*n1+j]/=8*(n1)*(n2)*(nt)*val;
-					}
-				}
-			}
-		}
+        for(int n=0;n<nt;++n){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    double val = kernel[n*n1*n2+i*n1+j];
+                    if(val==0){
+                        workspace[n*n1*n2+i*n1+j]=0;    
+                    }else{
+                        workspace[n*n1*n2+i*n1+j]/=8*(n1)*(n2)*(nt)*val;
+                    }
+                }
+            }
+        }
 
-		fftw_execute(planOut);
-	}
+        fftw_execute(planOut);
+    }
 
         // function for general rho. Boundary for t=0 only
     void solve_heat_equation(double* rho, double tau){
@@ -196,120 +194,120 @@ public:
     double eta;
 
     poisson_solver_2d(){
-    	workspace=NULL; u=NULL; kernel=NULL;
+        workspace=NULL; u=NULL; kernel=NULL;
     }
     poisson_solver_2d(int n1, int n2, double eta=1) {
-    	this->n1=n1;
-    	this->n2=n2;
+        this->n1=n1;
+        this->n2=n2;
 
-    	this->eta=eta;
+        this->eta=eta;
 
         workspace =(double*) fftw_malloc(n1*n2*sizeof(double));
 
-		// planIn = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT10,FFTW_REDFT10, FFTW_MEASURE);
-		// planOut = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT01,FFTW_REDFT01, FFTW_MEASURE);
+        // planIn = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT10,FFTW_REDFT10, FFTW_MEASURE);
+        // planOut = fftw_plan_r2r_2d(n2,n1, workspace, workspace, FFTW_REDFT01,FFTW_REDFT01, FFTW_MEASURE);
 
-		planIn =fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
-    	planOut=fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
+        planIn =fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT10, FFTW_REDFT10, FFTW_MEASURE);
+        planOut=fftw_plan_r2r_2d(n2, n1, workspace, workspace, FFTW_REDFT01, FFTW_REDFT01, FFTW_MEASURE);
 
-		u=new double[n1*n2];
+        u=new double[n1*n2];
         kernel=new double[n1*n2];
 
         create_negative_laplacian_kernel_2d();
     }
 
     ~poisson_solver_2d(){
-		delete[] u;
-	    delete[] kernel;
-	    fftw_free(workspace);
-	    fftw_destroy_plan(planIn);
-	    fftw_destroy_plan(planOut);
-	}
+        delete[] u;
+        delete[] kernel;
+        fftw_free(workspace);
+        fftw_destroy_plan(planIn);
+        fftw_destroy_plan(planOut);
+    }
 
     void create_negative_laplacian_kernel_2d(){
-	    
-    	for(int i=0;i<n2;i++){
-	        for(int j=0;j<n1;j++){
-	            double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
-	        	double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
-	            // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
-	            double negativeLaplacian= xpart + ypart;
-	            kernel[i*n1+j]=negativeLaplacian;
-	        }
-	    }
-		    
-	}
+        
+        for(int i=0;i<n2;i++){
+            for(int j=0;j<n1;j++){
+                double xpart = 2*n1*n2*(1-cos(M_PI*(1.0*j)/n1));
+                double ypart = 2*n2*n2*(1-cos(M_PI*(1.0*i)/n2));
+                // double negativeLaplacian= xpart + ypart + eta * ( xpart*xpart + ypart*ypart ) + tpart;
+                double negativeLaplacian= xpart + ypart;
+                kernel[i*n1+j]=negativeLaplacian;
+            }
+        }
+            
+    }
 
-	void perform_inverse_laplacian(const double c){
+    void perform_inverse_laplacian(const double c){
 
-		for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
+        for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
 
-		fftw_execute(planIn);
+        fftw_execute(planIn);
 
-		for(int i=0;i<n1*n2;++i){
-			double val = c + kernel[i];
-			if(val==0){
-				workspace[i]=0;	
-			}else{
-				workspace[i]/=4*(n1)*(n2)*val;
-			}
-		}
+        for(int i=0;i<n1*n2;++i){
+            double val = c + kernel[i];
+            if(val==0){
+                workspace[i]=0; 
+            }else{
+                workspace[i]/=4*(n1)*(n2)*val;
+            }
+        }
 
-		fftw_execute(planOut);
-	}
+        fftw_execute(planOut);
+    }
 
-	void perform_inverse_laplacian_phiT(const double c){
+    void perform_inverse_laplacian_phiT(const double c){
 
-		for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
+        for(int i=0;i<n1*n2;++i) workspace[i] = u[i];
 
-		fftw_execute(planIn);
+        fftw_execute(planIn);
 
-		for(int i=0;i<n1*n2;++i){
-			double val = c + kernel[i];
-			if(val==0){
-				workspace[i]=0;	
-			}else{
-				workspace[i]/=4*(n1)*(n2)*val;
-			}
-		}
+        for(int i=0;i<n1*n2;++i){
+            double val = c + kernel[i];
+            if(val==0){
+                workspace[i]=0; 
+            }else{
+                workspace[i]/=4*(n1)*(n2)*val;
+            }
+        }
 
-		fftw_execute(planOut);
-	}
+        fftw_execute(planOut);
+    }
 
-	void perform_convolution(const double* rho, const double var){
-		// memcpy(workspace, rho, n1*n2*sizeof(double));
+    void perform_convolution(const double* rho, const double var){
+        // memcpy(workspace, rho, n1*n2*sizeof(double));
 
-		for(int i=0;i<n1*n2;++i){
-			workspace[i] = rho[i];
-		}
+        for(int i=0;i<n1*n2;++i){
+            workspace[i] = rho[i];
+        }
 
-		fftw_execute(planIn);
-		for(int i=0;i<n1*n2;++i) workspace[i] *= exp(-kernel[i]*var*var) / (4*n1*n2);
-		fftw_execute(planOut);
-	}
+        fftw_execute(planIn);
+        for(int i=0;i<n1*n2;++i) workspace[i] *= exp(-kernel[i]*var*var) / (4*n1*n2);
+        fftw_execute(planOut);
+    }
 
 
-	void perform_convolution(const double* rho, const double* phi0, const double* phi1, const double var){
-		for(int i=0;i<n1*n2;++i){
-			workspace[i] = rho[i] * (phi1[i] - phi0[i]);
-		}
+    void perform_convolution(const double* rho, const double* phi0, const double* phi1, const double var){
+        for(int i=0;i<n1*n2;++i){
+            workspace[i] = rho[i] * (phi1[i] - phi0[i]);
+        }
 
-		fftw_execute(planIn);
+        fftw_execute(planIn);
 
-		for(int i=0;i<n2;++i){
-			for(int j=0;j<n1;++j){
-				double x = (1.0*j)/n1;
-				double y = (1.0*i)/n2;
-				workspace[i*n1+j] *= exp(-kernel[i*n1+j]*var*var);
-			}
-		}
+        for(int i=0;i<n2;++i){
+            for(int j=0;j<n1;++j){
+                double x = (1.0*j)/n1;
+                double y = (1.0*i)/n2;
+                workspace[i*n1+j] *= exp(-kernel[i*n1+j]*var*var);
+            }
+        }
 
-		for(int i=0;i<n1*n2;++i){
-			workspace[i] /= 4*n1*n2;
-		}
+        for(int i=0;i<n1*n2;++i){
+            workspace[i] /= 4*n1*n2;
+        }
 
-		fftw_execute(planOut);
-	}
+        fftw_execute(planOut);
+    }
 
     void solve_heat_equation(double* rho, double tau){
         memcpy(workspace,rho,n1*n2*sizeof(double));

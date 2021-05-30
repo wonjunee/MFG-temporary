@@ -10,7 +10,7 @@
 
 using namespace std;
 
-void initialize_rho(double* rho, int n1, int n2, int nt, double base=0){
+void initialize_rho(const shared_ptr<double[]>& rho, int n1, int n2, int nt, double base=0){
     int n = 0;
     double sum0 = 0, sum1 = 0;
     for(int i=0;i<n2;++i){
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     
     double base=0.01;
 
-    double* rho = new double[n1*n2*nt];
+    shared_ptr<double[]> rho(new double[n1*n2*nt]);
 
     // Initialize rho
 
@@ -95,6 +95,4 @@ int main(int argc, char **argv)
     t = clock() - t;
 
     printf ("CPU time for Iterations: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
-
-    delete[] rho;
 }

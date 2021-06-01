@@ -20,7 +20,7 @@ OPENCVFLAG := `pkg-config --cflags --libs opencv4`
  
 COMPILE_COMMAND := $(CC) $(CFLAGS) $(FFTWFLAG) $(OPENCVFLAG) $(OPENMPFLAG)
  
-OUTPUT := SIR
+OUTPUT := MFG
  
 all: ./lib/main.cpp
 	$(COMPILE_COMMAND) -o $(OUTPUT) ./lib/main.cpp

@@ -30,7 +30,8 @@ public:
         double tau;
         double sigma;
 
-        double p_;
+        double m1_coeff_;
+        double m2_coeff_;
 
         int max_iteration;
         double tolerance;
@@ -48,6 +49,7 @@ public:
         // dynamical arrays
         shared_ptr<double[]> mx;
         shared_ptr<double[]> my;
+        shared_ptr<double[]> m2;
         shared_ptr<double[]> phi;
         shared_ptr<double[]> phitmp;
         shared_ptr<double[]> rhotmp;
@@ -69,6 +71,7 @@ public:
         // initializing m, phi, rhotmp
         mx      = shared_ptr<double[]>(new double[n1*n2*nt]);
         my      = shared_ptr<double[]>(new double[n1*n2*nt]);
+        m2      = shared_ptr<double[]>(new double[n1*n2*nt]);
         phi     = shared_ptr<double[]>(new double[n1*n2*nt]);
         phitmp  = shared_ptr<double[]>(new double[n1*n2*nt]);
         rhotmp  = shared_ptr<double[]>(new double[n1*n2*nt]);
@@ -76,12 +79,10 @@ public:
         // initialize the arrays to be 0
         memset(mx.get(),      0, n1*n2*nt*sizeof(double));
         memset(my.get(),      0, n1*n2*nt*sizeof(double));
+        memset(m2.get(),      0, n1*n2*nt*sizeof(double));
         memset(phi.get(),     0, n1*n2*nt*sizeof(double));
         memset(phitmp.get(),  0, n1*n2*nt*sizeof(double));
         memset(rhotmp.get(),  0, n1*n2*nt*sizeof(double));
-
-        // this sets the power of the V1 function.
-        p_ = 1; // power
 
         // timing the initialization of FFT
         clock_t t;
@@ -94,6 +95,10 @@ public:
         
         t = clock() - t;
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
+
+        // setup coefficients for m1 and m2
+        m1_coeff_ = 1;
+        m2_coeff_ = 1;
     }
 
     // Destructor
@@ -116,7 +121,7 @@ public:
         muym = 1.0 * n2 * (phi[i*n1+j] - phi[im*n1+j]);
     }
 
-    // centered difference
+    // update mx and my
     void update_m(shared_ptr<double[]>& mx, shared_ptr<double[]>& my, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
 
         int im,ip,jm,jp;
@@ -124,26 +129,44 @@ public:
         for(int n=0;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
+
+                    int idx = n*n1*n2+i*n1+j;
+
                     setup_indices(im,ip,jm,jp,i,j);
 
                     double nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+j]);
                     double nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+i*n1+j]);
                     
-                    double rhoval=rho[n*n1*n2+i*n1+j];
+                    double rhoval=rho[idx];
+                    double mxval =mx[idx];
+                    double myval =my[idx];
 
-                    rhoval = pow(rhoval, p_);
-
-                    mx[n*n1*n2+i*n1+j] = (tau*rhoval)/(tau + rhoval) * (mx[n*n1*n2+i*n1+j]/tau + nablaxphi);
-                    my[n*n1*n2+i*n1+j] = (tau*rhoval)/(tau + rhoval) * (my[n*n1*n2+i*n1+j]/tau + nablayphi);
+                    mx[idx] = (tau*rhoval)/(tau + rhoval) * (mxval/tau + nablaxphi);
+                    my[idx] = (tau*rhoval)/(tau + rhoval) * (myval/tau + nablayphi);
                 }
             }   
         }   
     }
 
-    /* 
-        Update rho
-    */
+    // update m2
+    void update_m2(shared_ptr<double[]>& m2, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
 
+        int im,ip,jm,jp;
+
+        for(int n=0;n<nt;++n){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+                    int idx = n*n1*n2+i*n1+j;
+                    double rhoval=rho[idx];
+                    double phival=phi[idx];
+                    double m2val =m2 [idx];
+                    m2[idx] = (tau*rhoval)/(tau + rhoval) * (m2val/tau + phival);
+                }
+            }   
+        }   
+    }
+
+    // update m, phi values that are needed to calculate rho
     inline void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& phi){
 
         double mxvalue, myvalue;
@@ -159,41 +182,38 @@ public:
         else    Dtphi=0;
     }
 
-    void update_rho(const shared_ptr<double[]>& rho, const shared_ptr<const double[]>& rhotmp, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my){
-        // Newton's method
-        int max_iter = 50;
-        double tol   = 1e-6;
+    // update rho
+    void update_rho(const shared_ptr<double[]>& rho, const shared_ptr<const double[]>& rhotmp, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
 
-    	double newrhovalue = -1;
+        for(int n=1;n<nt-1;++n){
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
 
-        for(int iter_Newton=0; iter_Newton<max_iter; ++iter_Newton){
-            double error = 0;
-            for(int n=1;n<nt-1;++n){
-                for(int i=0;i<n2;++i){
-                    for(int j=0;j<n1;++j){
-                        int ind = n*n1*n2+i*n1+j;
-                        double mval=0;
-                        double Dtphi =0;
-                        calculate_rho_related(mval, Dtphi, n, i, j, mx, my, phi);
-                        double rhoval    = rho[ind];
-                        double rhotmpval = rhotmp[ind];
-                        
-                        // double top    = pow(rhoval, p_+1) * (rhoval - rhotmpval - tau * Dtphi) - 0.5 * p_ * tau * mval * mval;
-                        // double bottom = pow(rhoval, p_) * ((p_+2) * rhoval - (p_+1) * (rhotmpval + tau * Dtphi));
+                    int idx = n*n1*n2+i*n1+j;
 
-                        double top    =  - 0.5 * p_ * mval * mval / (pow(rhoval, p_+1)+1e-8) - Dtphi + rhoval/tau - rhotmpval/tau;
-                        double bottom =    0.5 * p_ * (p_+1) * mval * mval / (pow(rhoval, p_+2)+1e-8) + 1.0/tau;
+                    // initialize mval and Dtphi
+                    double mval  =0;
+                    double Dtphi =0;
 
-                        double eval = top/bottom;
+                    // calculate |m| and Dt phi
+                    calculate_rho_related(mval, Dtphi, n, i, j, mx, my, phi);
 
-                        rho[ind] = fmax(1e-5, rho[ind] - 0.5 * eval);
-                        error    += eval*eval;
-                    }
+                    // get the rest of the files
+                    double rhoval    = rho[idx];
+                    double m2val     = m2[idx];
+                    
+                    // solving cubic polynomical: x^3 + a x^2 + b x + c = 0
+                    double aval = - rhoval - tau * Dtphi;
+                    double bval = 0.0;
+                    double cval = - 0.5 * tau * (mval*mval + m2_coeff_ * m2val * m2val);
+
+                    // find cubic solution using cubic_solve function from helper function.
+                    double newrhovalue=cubic_solve(aval, bval, cval);
+
+                    // update rho
+                    rho[idx] = fmax(0,newrhovalue);
                 }
             }
-            // if(error / (n1*n2*nt) < tol){
-            //     break;
-            // }
         }
     }
 
@@ -212,23 +232,24 @@ public:
         return dtrho;
     }   
 
-    double update_phi(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my){
+    double update_phi(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
 
-        int n,ip,im,jp,jm,ind;
+        int n,ip,im,jp,jm,idx;
 
         for(int n=0;n<nt;++n){  
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
-                    ind = n*n1*n2+i*n1+j;
+                    idx = n*n1*n2+i*n1+j;
 
                     setup_indices(im,ip,jm,jp,i,j);
 
-                    double dtrho = calculate_dtrho(rho, n, i, j);
+                    double dtrho  =calculate_dtrho(rho, n, i, j);
                     double nablamx=calculate_grad_mx(mx,n,im,i,ip,jm,j,jp);
                     double nablamy=calculate_grad_my(my,n,im,i,ip,jm,j,jp);
+                    double m2val  =m2[idx];
 
-                    fftps->u[ind]  = (dtrho + nablamx + nablamy); 
+                    fftps->u[idx]  = (dtrho + nablamx + nablamy - m2_coeff_ * m2val); 
                 }
             }
         }
@@ -253,14 +274,18 @@ public:
         for(int n=0;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
+                    // setup index
+                    int idx = n*n1*n2+i*n1+j;
+
                     double mval=0;
                     double Dtphi =0;
                     calculate_rho_related(mval, Dtphi, n, i, j, mx, my, phi);
-                    double rhoval = rho[n*n1*n2+i*n1+j];
+
+                    double rhoval = rho[idx];
                     if(rhoval < 1e-3){
                         sum += 0;
                     }else{
-                        sum += 0.5 * mval*mval / pow(rho[n*n1*n2+i*n1+j], p_);    
+                        sum += 0.5 * mval*mval / rhoval;
                     }
                     
                 }
@@ -305,7 +330,7 @@ public:
 
             // update phi
             memcpy(phitmp.get(),phi.get(),n1*n2*nt*sizeof(double));
-            sanity_value  = update_phi(rho,mx,my);
+            sanity_value  = update_phi(rho,mx,my,m2);
             sanity_value_previous = sanity_value;
 
             for(int i=0;i<n1*n2*nt;++i){
@@ -317,9 +342,10 @@ public:
 
             int skip2 = 100;
 
-            update_m(mx,my,rho,phi);
-            update_rho(rho,rhotmp,mx,my);
-            
+            update_rho(rho,rhotmp,mx,my,m2);
+            update_m (mx,my,rhotmp,phi);
+            update_m2(m2,rhotmp,phi);
+    
             
             // CALCULATE ENERGY
             energy = calculate_energy(rho, mx, my);

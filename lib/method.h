@@ -267,7 +267,7 @@ public:
     }
 
 
-    double calculate_energy(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my){
+    double calculate_energy(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
         double sum = 0;
 
         // TODO
@@ -282,10 +282,11 @@ public:
                     calculate_rho_related(mval, Dtphi, n, i, j, mx, my, phi);
 
                     double rhoval = rho[idx];
-                    if(rhoval < 1e-3){
+                    double m2val  = m2 [idx];
+                    if(rhoval < 1e-8){
                         sum += 0;
                     }else{
-                        sum += 0.5 * mval*mval / rhoval;
+                        sum += 0.5 * (mval*mval + m2val*m2val) / rhoval;
                     }
                     
                 }
@@ -348,7 +349,7 @@ public:
     
             
             // CALCULATE ENERGY
-            energy = calculate_energy(rho, mx, my);
+            energy = calculate_energy(rho, mx, my, m2);
             error=fabs((energy-previous_energy)/previous_energy);
             previous_energy=energy;
 

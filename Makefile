@@ -15,8 +15,8 @@ CFLAGS     :=  -O3 -std=c++17 -I./lib
 FFTWFLAG   := -I/usr/local/include  -L/usr/local/lib -lfftw3
 # opencv library: for image
 OPENCVFLAG := `pkg-config --cflags --libs opencv4`
-# for parallelization
-# OPENMPFLAG := -Xclang -fopenmp -lomp
+# for parallelization. Use 0 if you don't want. Use the multiple of 2 if possible.
+OPENMPFLAG := -DASYNC=0
  
 COMPILE_COMMAND := $(CC) $(CFLAGS) $(FFTWFLAG) $(OPENCVFLAG) $(OPENMPFLAG)
  

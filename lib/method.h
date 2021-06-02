@@ -12,6 +12,18 @@
 // #include "poisson_solver.h"
 #include "poisson_solver_3d.h"
 #include "helper.h"
+#include <future>
+#include <thread>
+#include <vector>
+
+
+#ifndef ASYNC
+#define ASYNC 0
+#endif
+
+int K = ASYNC;
+
+std::mutex mtx;
 
 static const double LARGE_NUMBER = 99999999999;    
 
@@ -122,11 +134,11 @@ public:
     }
 
     // update mx and my
-    void update_m(shared_ptr<double[]>& mx, shared_ptr<double[]>& my, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
 
+    void update_m_for_loop_per_nt(double* mx, double* my, const double* rho, const double* phi, const int n_start, const int n_end){
+        // mtx.lock();
         int im,ip,jm,jp;
-
-        for(int n=0;n<nt;++n){
+        for(int n=n_start;n<n_end;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -145,15 +157,30 @@ public:
                     my[idx] = (tau*rhoval)/(tau + rhoval) * (myval/tau + nablayphi);
                 }
             }   
-        }   
+        }
+        // mtx.unlock();
     }
 
-    // update m2
-    void update_m2(shared_ptr<double[]>& m2, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
+    void update_m(shared_ptr<double[]>& mx, shared_ptr<double[]>& my, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
+#if ASYNC>0
+        std::vector<std::future<void> > changes;
+        for(int k=0;k<K;++k){
+            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_m_for_loop_per_nt, this, mx.get(), my.get(), rho.get(), phi.get(), k*nt/K, (k+1)*nt/K));
+        }
+        for(int k=0;k<K;++k){
+            changes[k].get();
+        }
+#else
+        update_m_for_loop_per_nt(mx.get(), my.get(), rho.get(), phi.get(), 0, nt);
+#endif
 
+    }
+
+    void update_m2_for_loop_per_nt(double* m2, const double* rho, const double* phi, const int n_start, const int n_end){
+        // mtx.lock();
         int im,ip,jm,jp;
 
-        for(int n=0;n<nt;++n){
+        for(int n=n_start;n<n_end;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
                     int idx = n*n1*n2+i*n1+j;
@@ -164,10 +191,27 @@ public:
                 }
             }   
         }   
+        // mtx.unlock();
+    }
+    // update m2
+    void update_m2(shared_ptr<double[]>& m2, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
+#if ASYNC>0
+        std::vector<std::future<void> > changes;
+        for(int k=0;k<K;++k){
+            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_m2_for_loop_per_nt, this, m2.get(), rho.get(), phi.get(), k*nt/K, (k+1)*nt/K));
+        }
+        for(int k=0;k<K;++k){
+            changes[k].get();
+        }
+#else
+        update_m2_for_loop_per_nt(m2.get(), rho.get(), phi.get(), 0, nt);
+#endif
+
+
     }
 
     // update m, phi values that are needed to calculate rho
-    inline void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& phi){
+    inline void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const double* mx, const double* my){
 
         double mxvalue, myvalue;
         int im,ip,jm,jp;
@@ -183,9 +227,10 @@ public:
     }
 
     // update rho
-    void update_rho(const shared_ptr<double[]>& rho, const shared_ptr<const double[]>& rhotmp, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
+    void update_rho_for_loop_per_nt(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
 
-        for(int n=1;n<nt-1;++n){
+        for(int n=n_start;n<n_end;++n){
+            if(n==1 || n==nt-1) continue;
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -196,7 +241,7 @@ public:
                     double Dtphi =0;
 
                     // calculate |m| and Dt phi
-                    calculate_rho_related(mval, Dtphi, n, i, j, mx, my, phi);
+                    calculate_rho_related(mval, Dtphi, n, i, j, mx, my);
 
                     // get the rest of the files
                     double rhoval    = rho[idx];
@@ -217,26 +262,42 @@ public:
         }
     }
 
-    inline double calculate_grad_mx(const shared_ptr<const double[]>& mxTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+    // update rho
+    void update_rho(const shared_ptr<double[]>& rho, const shared_ptr<const double[]>& rhotmp, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
+
+#if ASYNC>0
+        std::vector<std::future<void> > changes;
+        for(int k=0;k<K;++k){
+            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_rho_for_loop_per_nt, this, rho.get(), rhotmp.get(), mx.get(), my.get(), m2.get(), k*nt/K, (k+1)*nt/K));
+        }
+        for(int k=0;k<K;++k){
+            changes[k].get();
+        }
+#else
+        update_rho_for_loop_per_nt(rho.get(), rhotmp.get(), mx.get(), my.get(), m2.get(), 0, nt);
+#endif
+    }
+
+    inline double calculate_grad_mx(const double* mxTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
         return n1*(mxTmp[n*n1*n2+i*n1+j]-mxTmp[n*n1*n2+i*n1+jm]);
     }
 
-    inline double calculate_grad_my(const shared_ptr<const double[]>& myTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
+    inline double calculate_grad_my(const double* myTmp, const int n, const int im, const int i, const int ip, const int jm, const int j, const int jp){
         return n2*(myTmp[n*n1*n2+i*n1+j]-myTmp[n*n1*n2+im*n1+j]);
     }
 
-    inline double calculate_dtrho(const shared_ptr<const double[]>& rho, const int n, const int i, const int j){
+    inline double calculate_dtrho(const double* rho, const int n, const int i, const int j){
     	double dtrho=0;
     	if(n==nt-1) dtrho=0;
         else        dtrho=1.0*nt*(rho[(n+1)*n1*n2+i*n1+j]-rho[(n)*n1*n2+i*n1+j]); 
         return dtrho;
     }   
 
-    double update_phi(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
+    void update_phi_for_loop_per_nt(const double* rho, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
 
         int n,ip,im,jp,jm,idx;
 
-        for(int n=0;n<nt;++n){  
+        for(int n=n_start;n<n_end;++n){  
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -253,15 +314,52 @@ public:
                 }
             }
         }
+    }
 
+    double update_phi_for_loop_fftps(const int n_start, const int n_end){
         double error = 0;
+        for(int n=n_start;n<n_end;++n){
+            for(int i=0;i<n1*n2;++i){
+                int idx = n*n1*n2+i;
+                double fftps_val = fftps->workspace[idx];
+                phi[idx] += sigma * fftps_val;
+                error    += fftps->u[idx] * fftps_val;
+            }
+        }
+        return error;
+    }
+
+    double update_phi(const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
+
+#if ASYNC>0
+        std::vector<std::future<void> > changes;
+        for(int k=0;k<K;++k){
+            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_phi_for_loop_per_nt, this, rho.get(), mx.get(), my.get(), m2.get(), k*nt/K, (k+1)*nt/K));
+        }
+        for(int k=0;k<K;++k){
+            changes[k].get();
+        }
+#else
+        update_phi_for_loop_per_nt(rho.get(), mx.get(), my.get(), m2.get(), 0, nt);
+#endif
 
         fftps->perform_inverse_laplacian();
         
-        for(int i=0;i<n1*n2*nt;++i){
-            phi[i]    += sigma       * fftps->workspace[i];
-            error     += fftps->u[i] * fftps->workspace[i];
+        double error = 0;
+
+#if ASYNC>0
+        std::vector<std::future<double> > changes2;
+
+        for(int k=0;k<K;++k){
+            changes2.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_phi_for_loop_fftps, this, k*nt/K, (k+1)*nt/K));
         }
+        for(int k=0;k<K;++k){
+            error += changes2[k].get();
+        }            
+#else
+        error = update_phi_for_loop_fftps(0, nt);
+#endif
+        
         return error/(1.0*n1*n2*nt);
 
     }
@@ -279,7 +377,7 @@ public:
 
                     double mval=0;
                     double Dtphi =0;
-                    calculate_rho_related(mval, Dtphi, n, i, j, mx, my, phi);
+                    calculate_rho_related(mval, Dtphi, n, i, j, mx.get(), my.get());
 
                     double rhoval = rho[idx];
                     double m2val  = m2 [idx];
@@ -314,6 +412,12 @@ public:
 
     void run(const shared_ptr<double[]>& rho, int skip=1){
 
+        if(K > 0){
+            std::cout << "--------------------\n";
+            std::cout << "Running on " << K << " threads\n";
+            std::cout << "--------------------\n";
+        }
+
         previous_energy=1;
         previous_dual=1;
         double error=1, dual_gap=1, energy=1, dual=0, sanity_value=1;
@@ -334,9 +438,22 @@ public:
             sanity_value  = update_phi(rho,mx,my,m2);
             sanity_value_previous = sanity_value;
 
+#if ASYNC>0
+            for(int k=0;k<K;++k){
+                auto foo = std::async(std::launch::async|std::launch::deferred, [&](const int n_start, const int n_end){
+                        for(int n=n_start; n<n_end;++n){
+                            for(int i=0;i<n1*n2;++i){
+                                int idx = n*n1*n2+i;
+                                phi[idx] = 2*phi[idx] - phitmp[idx];
+                            }
+                        }
+                    }, k*nt/K, (k+1)*nt/K);
+            }
+#else            
             for(int i=0;i<n1*n2*nt;++i){
                 phi[i] = 2*phi[i] - phitmp[i];
             }
+#endif
 
             // get the data before updates
             memcpy(rhotmp.get(),rho.get(),n1*n2*nt*sizeof(double));
@@ -345,7 +462,7 @@ public:
 
             update_rho(rho,rhotmp,mx,my,m2);
             update_m (mx,my,rhotmp,phi);
-            update_m2(m2,rhotmp,phi);
+            // update_m2(m2,rhotmp,phi);
     
             
             // CALCULATE ENERGY

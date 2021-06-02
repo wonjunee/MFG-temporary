@@ -230,7 +230,7 @@ public:
     void update_rho_for_loop_per_nt(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
 
         for(int n=n_start;n<n_end;++n){
-            if(n==1 || n==nt-1) continue;
+            if(n==0 || n==nt-1) continue;
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
 
@@ -439,16 +439,21 @@ public:
             sanity_value_previous = sanity_value;
 
 #if ASYNC>0
+            std::vector<std::future<void> > changes;
+
             for(int k=0;k<K;++k){
-                auto foo = std::async(std::launch::async|std::launch::deferred, [&](const int n_start, const int n_end){
+                changes.push_back(std::async(std::launch::async|std::launch::deferred, [&](const int n_start, const int n_end){
                         for(int n=n_start; n<n_end;++n){
                             for(int i=0;i<n1*n2;++i){
                                 int idx = n*n1*n2+i;
                                 phi[idx] = 2*phi[idx] - phitmp[idx];
                             }
                         }
-                    }, k*nt/K, (k+1)*nt/K);
+                    }, k*nt/K, (k+1)*nt/K));
             }
+            for(int k=0;k<K;++k){
+                changes[k].get();
+            }  
 #else            
             for(int i=0;i<n1*n2*nt;++i){
                 phi[i] = 2*phi[i] - phitmp[i];

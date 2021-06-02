@@ -443,13 +443,14 @@ public:
 
             for(int k=0;k<K;++k){
                 changes.push_back(std::async(std::launch::async|std::launch::deferred, [&](const int n_start, const int n_end){
-                        for(int n=n_start; n<n_end;++n){
-                            for(int i=0;i<n1*n2;++i){
-                                int idx = n*n1*n2+i;
-                                phi[idx] = 2*phi[idx] - phitmp[idx];
-                            }
-                        }
-                    }, k*nt/K, (k+1)*nt/K));
+                                                                                                    for(int n=n_start; n<n_end;++n){
+                                                                                                        for(int i=0;i<n1*n2;++i){
+                                                                                                            int idx = n*n1*n2+i;
+                                                                                                            phi[idx] = 2*phi[idx] - phitmp[idx];
+                                                                                                        }
+                                                                                                    }
+                                                                                                }, 
+                                                            k*nt/K, (k+1)*nt/K));
             }
             for(int k=0;k<K;++k){
                 changes[k].get();

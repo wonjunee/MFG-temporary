@@ -6,10 +6,8 @@
 #include <cmath>
 #include <time.h>
 #include <cstring>
-// #include <omp.h> // parallelization
 #include <fftw3.h>
 #include <memory>
-// #include "poisson_solver.h"
 #include "poisson_solver_3d.h"
 #include "helper.h"
 #include <future>
@@ -65,6 +63,7 @@ public:
         shared_ptr<double[]> phi;
         shared_ptr<double[]> phitmp;
         shared_ptr<double[]> rhotmp;
+
 
     // default constructor
     Method(){}
@@ -136,7 +135,6 @@ public:
     // update mx and my
 
     void update_m_for_loop_per_nt(double* mx, double* my, const double* rho, const double* phi, const int n_start, const int n_end){
-        // mtx.lock();
         int im,ip,jm,jp;
         for(int n=n_start;n<n_end;++n){
             for(int i=0;i<n2;++i){
@@ -158,14 +156,13 @@ public:
                 }
             }   
         }
-        // mtx.unlock();
     }
 
     void update_m(shared_ptr<double[]>& mx, shared_ptr<double[]>& my, const shared_ptr<const double[]>& rho, const shared_ptr<const double[]>& phi){
 #if ASYNC>0
         std::vector<std::future<void> > changes;
         for(int k=0;k<K;++k){
-            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_m_for_loop_per_nt, this, mx.get(), my.get(), rho.get(), phi.get(), k*nt/K, (k+1)*nt/K));
+            changes.push_back(std::async(std::launch::async, &Method::update_m_for_loop_per_nt, this, mx.get(), my.get(), rho.get(), phi.get(), k*nt/K, (k+1)*nt/K));
         }
         for(int k=0;k<K;++k){
             changes[k].get();
@@ -198,7 +195,7 @@ public:
 #if ASYNC>0
         std::vector<std::future<void> > changes;
         for(int k=0;k<K;++k){
-            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_m2_for_loop_per_nt, this, m2.get(), rho.get(), phi.get(), k*nt/K, (k+1)*nt/K));
+            changes.push_back(std::async(std::launch::async, &Method::update_m2_for_loop_per_nt, this, m2.get(), rho.get(), phi.get(), k*nt/K, (k+1)*nt/K));
         }
         for(int k=0;k<K;++k){
             changes[k].get();
@@ -268,7 +265,7 @@ public:
 #if ASYNC>0
         std::vector<std::future<void> > changes;
         for(int k=0;k<K;++k){
-            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_rho_for_loop_per_nt, this, rho.get(), rhotmp.get(), mx.get(), my.get(), m2.get(), k*nt/K, (k+1)*nt/K));
+            changes.push_back(std::async(std::launch::async, &Method::update_rho_for_loop_per_nt, this, rho.get(), rhotmp.get(), mx.get(), my.get(), m2.get(), k*nt/K, (k+1)*nt/K));
         }
         for(int k=0;k<K;++k){
             changes[k].get();
@@ -334,7 +331,7 @@ public:
 #if ASYNC>0
         std::vector<std::future<void> > changes;
         for(int k=0;k<K;++k){
-            changes.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_phi_for_loop_per_nt, this, rho.get(), mx.get(), my.get(), m2.get(), k*nt/K, (k+1)*nt/K));
+            changes.push_back(std::async(std::launch::async, &Method::update_phi_for_loop_per_nt, this, rho.get(), mx.get(), my.get(), m2.get(), k*nt/K, (k+1)*nt/K));
         }
         for(int k=0;k<K;++k){
             changes[k].get();
@@ -346,12 +343,11 @@ public:
         fftps->perform_inverse_laplacian();
         
         double error = 0;
-
 #if ASYNC>0
         std::vector<std::future<double> > changes2;
 
         for(int k=0;k<K;++k){
-            changes2.push_back(std::async(std::launch::async|std::launch::deferred, &Method::update_phi_for_loop_fftps, this, k*nt/K, (k+1)*nt/K));
+            changes2.push_back(std::async(std::launch::async, &Method::update_phi_for_loop_fftps, this, k*nt/K, (k+1)*nt/K));
         }
         for(int k=0;k<K;++k){
             error += changes2[k].get();
@@ -442,7 +438,7 @@ public:
             std::vector<std::future<void> > changes;
 
             for(int k=0;k<K;++k){
-                changes.push_back(std::async(std::launch::async|std::launch::deferred, [&](const int n_start, const int n_end){
+                changes.push_back(std::async(std::launch::async, [&](const int n_start, const int n_end){
                                                                                                     for(int n=n_start; n<n_end;++n){
                                                                                                         for(int i=0;i<n1*n2;++i){
                                                                                                             int idx = n*n1*n2+i;
@@ -468,7 +464,7 @@ public:
 
             update_rho(rho,rhotmp,mx,my,m2);
             update_m (mx,my,rhotmp,phi);
-            // update_m2(m2,rhotmp,phi);
+            update_m2(m2,rhotmp,phi);
     
             
             // CALCULATE ENERGY

@@ -36,7 +36,7 @@ void initialize_rho(const shared_ptr<double[]>& rho, int n1, int n2, int nt, dou
             n = 0;
             rho[n*n1*n2+i*n1+j] *= n1*n2/sum0;
             n = nt-1;
-            rho[n*n1*n2+i*n1+j] *= n1*n2/sum1;
+            rho[n*n1*n2+i*n1+j] *= n1*n2/sum1*1.2;
         }
     }
     for(int n=1;n<nt-1;++n){

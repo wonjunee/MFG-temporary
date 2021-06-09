@@ -72,7 +72,7 @@ public:
         for(int n=0;n<nt;++n){
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
-                    double val = kernel[n*n1*n2+i*n1+j];
+                    double val = (0.1 + kernel[n*n1*n2+i*n1+j]);
                     if(val==0){
                         workspace[n*n1*n2+i*n1+j]=0;    
                     }else{

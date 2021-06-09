@@ -40,7 +40,6 @@ public:
         double tau;
         double sigma;
 
-        double m1_coeff_;
         double m2_coeff_;
 
         int max_iteration;
@@ -108,7 +107,6 @@ public:
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
         // setup coefficients for m1 and m2
-        m1_coeff_ = 1;
         m2_coeff_ = 1;
     }
 
@@ -184,7 +182,7 @@ public:
                     double rhoval=rho[idx];
                     double phival=phi[idx];
                     double m2val =m2 [idx];
-                    m2[idx] = (tau*rhoval)/(tau + rhoval) * (m2val/tau + phival);
+                    m2[idx] = (tau*rhoval)/(tau*m2_coeff_ + rhoval) * (m2val/tau + phival);
                 }
             }   
         }   

@@ -23,12 +23,13 @@ void initialize_rho_one_to_two(const shared_ptr<double[]>& rho, int n1, int n2, 
             double y = (i+0.5)/n2;
 
             n = 0;
-            rho[n*n1*n2+i*n1+j] = exp(-100*(pow(x-px,2)+pow(y-py,2))) + base;
+            rho[n*n1*n2+i*n1+j] = 0.7*exp(-100*(pow(x-px,2)+pow(y-py,2))) + base;
+            // rho[n*n1*n2+i*n1+j] = 0.5;
 
             n = nt-1;
-            rho[n*n1*n2+i*n1+j] = exp(-100*(pow(x-(1-px),2)+pow(y-py,2)));
-            rho[n*n1*n2+i*n1+j]+= exp(-100*(pow(x-px,2)+pow(y-(1-py),2)));
-            rho[n*n1*n2+i*n1+j]+= exp(-100*(pow(x-(1-px),2)+pow(y-(1-py),2)));
+            rho[n*n1*n2+i*n1+j] = 0.7*exp(-100*(pow(x-(1-px),2)+pow(y-py,2)));
+            rho[n*n1*n2+i*n1+j]+= 0.7*exp(-100*(pow(x-px,2)+pow(y-(1-py),2)));
+            rho[n*n1*n2+i*n1+j]+= 0.7*exp(-100*(pow(x-(1-px),2)+pow(y-(1-py),2)));
             rho[n*n1*n2+i*n1+j]+= base;
         }
     }
@@ -100,7 +101,7 @@ int main(int argc, char **argv)
     int max_iteration=stoi(argv[7]);
     int skip=stoi(argv[8]);
     
-    double base=0.05;
+    double base=0.1;
 
     shared_ptr<double[]> rho(new double[n1*n2*nt]);
 

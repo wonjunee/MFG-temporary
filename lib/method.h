@@ -107,7 +107,7 @@ public:
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
         // setup coefficients for m1 and m2
-        m2_coeff_ = 1;
+        m2_coeff_ = 100;
     }
 
     // Destructor
@@ -142,8 +142,8 @@ public:
 
                     setup_indices(im,ip,jm,jp,i,j);
 
-                    double nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[n*n1*n2+i*n1+j]);
-                    double nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[n*n1*n2+i*n1+j]);
+                    double nablaxphi = 1.0*n1*(phi[n*n1*n2+i*n1+jp]-phi[idx]);
+                    double nablayphi = 1.0*n2*(phi[n*n1*n2+ip*n1+j]-phi[idx]);
                     
                     double rhoval=rho[idx];
                     double mxval =mx[idx];
@@ -182,8 +182,8 @@ public:
                     double rhoval= rho[idx];
                     double phival= phi[idx];
                     double m2val = m2 [idx];
-                    double V1val = calculate_V2_rho(rhoval);
-                    m2[idx] = (tau*V1val)/(tau*m2_coeff_ + V1val) * (m2val/tau + phival);
+                    double V2val = calculate_V2_rho(rhoval);
+                    m2[idx] = (tau*V2val)/(tau*m2_coeff_ + V2val) * (m2val/tau + phival);
                 }
             }   
         }   
@@ -209,16 +209,18 @@ public:
     // update m, phi values that are needed to calculate rho
     inline void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const double* mx, const double* my){
 
-        double mxvalue, myvalue;
+        double mxval, myval;
         int im,ip,jm,jp;
         setup_indices(im,ip,jm,jp,i,j);
 
-        mxvalue = mx[n*n1*n2+i*n1+j];
-        myvalue = my[n*n1*n2+i*n1+j];
-        
-        mvalue = sqrt(mxvalue*mxvalue + myvalue*myvalue);
+        int idx = n*n1*n2+i*n1+j;
 
-        if(n>0) Dtphi=1.0*nt*(phi[n*n1*n2+i*n1+j]-phi[(n-1)*n1*n2+i*n1+j]);
+        mxval = mx[idx];
+        myval = my[idx];
+        
+        mvalue = sqrt(mxval*mxval + myval*myval);
+
+        if(n>0) Dtphi=1.0*nt*(phi[idx]-phi[(n-1)*n1*n2+i*n1+j]);
         else    Dtphi=0;
     }
 
@@ -261,6 +263,11 @@ public:
 
     inline double calculate_V2_rho(const double rhoval){
         return rhoval * (rhoval - 1) / (log(rhoval));
+
+
+
+
+        // return rhoval;
     }
 
     inline double calculate_V2_prime_rho(const double rhoval){
@@ -268,6 +275,9 @@ public:
         double numer = (2.0*rhoval - 1.0) * log_rho - (rhoval - 1);
         double denom = log_rho * log_rho;
         return numer/denom;
+
+
+        // return 1;
     }
     /**
      * update rho
@@ -277,7 +287,7 @@ public:
     void update_rho_for_loop_per_nt(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
 
         // using newton's method
-        const int max_it_newton = 500;
+        const int max_it_newton = 100;
         const double TOL_newton = 1e-6;
 
         for(int n=n_start;n<n_end;++n){
@@ -288,8 +298,8 @@ public:
                     int idx = n*n1*n2+i*n1+j;
 
                     // initialize mval and Dtphi
-                    double m1val  =0;
-                    double Dtphi =0;
+                    double m1val = 0;
+                    double Dtphi = 0;
 
                     // calculate |m| and Dt phi
                     calculate_rho_related(m1val, Dtphi, n, i, j, mx, my);
@@ -305,13 +315,13 @@ public:
                         double V1val  = rhoval;
                         double V2val  = calculate_V2_rho(rhoval);
                         double V2primeval = calculate_V2_prime_rho(rhoval);
-                        double F_rho        = - m1val*m1val/(2.0*rhoval*rhoval)    - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
-                        double F_prime_rho  =   m1val*m1val/(rhoval*rhoval*rhoval) + m2val*m2val/(V2val*V2val*V2val) * V2primeval * V2primeval + 1.0/tau;
+                        double F_rho        = - m1val*m1val/(2.0*V1val*V1val)    - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
+                        double F_prime_rho  =   m1val*m1val/(V1val*V1val*V1val) + m2val*m2val/(V2val*V2val*V2val) * V2primeval * V2primeval + 1.0/tau;
 
-                        double newrhoval = rhoval - F_rho / F_prime_rho;
+                        double newrhoval = rhoval - 0.5 * F_rho / F_prime_rho;
 
                         // update rho
-                        rho[idx] = fmax(0, newrhoval);
+                        rho[idx] = fmax(1e-3, newrhoval);
                     }
                 }
             }

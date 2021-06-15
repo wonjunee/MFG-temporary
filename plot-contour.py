@@ -84,6 +84,7 @@ def save_animation():
     ax.set_axis_off()
     plt.tight_layout()
 
+    vmin = np.min(rho)
     vmax = np.max(rho)
     
     # animation function.  This is called sequentially
@@ -91,12 +92,13 @@ def save_animation():
         # fig.clear()
         cax.set_array(rho[n])
         
-        # cax0.set_clim(0, vmax)
-        cax.set_clim(0, vmax)
+        # cax.set_clim(0, vmax)
+        cax.set_clim(vmin, vmax)
+        # cax.set_clim(np.min(rho[n]), np.max(rho[n]))
         
         
 
-        ax.set_title("Video: {}".format(n))
+        ax.set_title("Video: {}\nMin: {:.4}\nMax: {:.4}".format(n,np.min(rho[n]),np.max(rho[n])))
         
         # cax0.set_clim(0, 10)
         # plt.suptitle("$\\beta$={:.2}, $\\gamma$={:.2}, $\\sigma$={:.3}\nt={:.2f}".format(beta,gamma,var,n/nt))

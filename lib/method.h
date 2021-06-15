@@ -179,10 +179,11 @@ public:
             for(int i=0;i<n2;++i){
                 for(int j=0;j<n1;++j){
                     int idx = n*n1*n2+i*n1+j;
-                    double rhoval=rho[idx];
-                    double phival=phi[idx];
-                    double m2val =m2 [idx];
-                    m2[idx] = (tau*rhoval)/(tau*m2_coeff_ + rhoval) * (m2val/tau + phival);
+                    double rhoval= rho[idx];
+                    double phival= phi[idx];
+                    double m2val = m2 [idx];
+                    double V1val = calculate_V2_rho(rhoval);
+                    m2[idx] = (tau*V1val)/(tau*m2_coeff_ + V1val) * (m2val/tau + phival);
                 }
             }   
         }   
@@ -221,8 +222,8 @@ public:
         else    Dtphi=0;
     }
 
-    // update rho
-    void update_rho_for_loop_per_nt(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
+    // update rho: V1=rho, V2=rho
+    void update_rho_for_loop_per_nt_simple(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
 
         for(int n=n_start;n<n_end;++n){
             if(n==0 || n==nt-1) continue;
@@ -257,9 +258,68 @@ public:
         }
     }
 
+
+    inline double calculate_V2_rho(const double rhoval){
+        return rhoval * (rhoval - 1) / (log(rhoval));
+    }
+
+    inline double calculate_V2_prime_rho(const double rhoval){
+        double log_rho = log(rhoval);
+        double numer = (2.0*rhoval - 1.0) * log_rho - (rhoval - 1);
+        double denom = log_rho * log_rho;
+        return numer/denom;
+    }
+    /**
+     * update rho
+     * V1 = rho
+     * V2 = rho(rho-1)/log(rho)
+     */
+    void update_rho_for_loop_per_nt(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
+
+        // using newton's method
+        const int max_it_newton = 500;
+        const double TOL_newton = 1e-6;
+
+        for(int n=n_start;n<n_end;++n){
+            if(n==0 || n==nt-1) continue;
+            for(int i=0;i<n2;++i){
+                for(int j=0;j<n1;++j){
+
+                    int idx = n*n1*n2+i*n1+j;
+
+                    // initialize mval and Dtphi
+                    double m1val  =0;
+                    double Dtphi =0;
+
+                    // calculate |m| and Dt phi
+                    calculate_rho_related(m1val, Dtphi, n, i, j, mx, my);
+
+                    // get the rest of the files
+                    double m2val     = m2[idx];
+                    double rhotmpval = rhotmp[idx];
+
+                    for(int iter_newton=0;iter_newton<max_it_newton;++iter_newton){
+
+                        // get the rest of the files
+                        double rhoval = rho[idx];
+                        double V1val  = rhoval;
+                        double V2val  = calculate_V2_rho(rhoval);
+                        double V2primeval = calculate_V2_prime_rho(rhoval);
+                        double F_rho        = - m1val*m1val/(2.0*rhoval*rhoval)    - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
+                        double F_prime_rho  =   m1val*m1val/(rhoval*rhoval*rhoval) + m2val*m2val/(V2val*V2val*V2val) * V2primeval * V2primeval + 1.0/tau;
+
+                        double newrhoval = rhoval - F_rho / F_prime_rho;
+
+                        // update rho
+                        rho[idx] = fmax(0, newrhoval);
+                    }
+                }
+            }
+        }
+    }
+
     // update rho
     void update_rho(const shared_ptr<double[]>& rho, const shared_ptr<const double[]>& rhotmp, const shared_ptr<const double[]>& mx, const shared_ptr<const double[]>& my, const shared_ptr<const double[]>& m2){
-
 #if ASYNC>0
         std::vector<std::future<void> > changes;
         for(int k=0;k<K;++k){

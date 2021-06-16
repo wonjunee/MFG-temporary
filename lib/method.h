@@ -107,7 +107,7 @@ public:
         printf ("\nCPU time for setting up FFT: %f seconds.\n",((float)t)/CLOCKS_PER_SEC);
 
         // setup coefficients for m1 and m2
-        m2_coeff_ = 100;
+        m2_coeff_ = 1;
     }
 
     // Destructor
@@ -207,7 +207,7 @@ public:
     }
 
     // update m, phi values that are needed to calculate rho
-    inline void calculate_rho_related(double& mvalue, double& Dtphi, const int n, const int i, const int j, const double* mx, const double* my){
+    inline void calculate_rho_related(double& mval, double& Dtphi, const int n, const int i, const int j, const double* mx, const double* my){
 
         double mxval, myval;
         int im,ip,jm,jp;
@@ -218,7 +218,7 @@ public:
         mxval = mx[idx];
         myval = my[idx];
         
-        mvalue = sqrt(mxval*mxval + myval*myval);
+        mval  = sqrt(mxval*mxval + myval*myval);
 
         if(n>0) Dtphi=1.0*nt*(phi[idx]-phi[(n-1)*n1*n2+i*n1+j]);
         else    Dtphi=0;
@@ -261,23 +261,52 @@ public:
     }
 
 
-    inline double calculate_V2_rho(const double rhoval){
-        return rhoval * (rhoval - 1) / (log(rhoval));
+    inline double calculate_V1_rho(const double rhoval){
 
-
-
-
+// ex1
         // return rhoval;
+
+// ex2
+        double alpha=1.0; return std::pow(rhoval,alpha);
+    }
+
+    inline double calculate_V1_prime_rho(const double rhoval){
+
+// ex1
+        // return 1;
+
+// ex2
+        double alpha=1.0; return std::pow(rhoval,alpha-1);
+    }
+
+
+    inline double calculate_V2_rho(const double rhoval){
+
+// ex1
+        // if(rhoval == 1) return 1;
+        // return rhoval * (rhoval - 1) / (log(rhoval));
+
+// ex2
+        // return rhoval;
+
+// ex3
+        double alpha=1.0; return std::pow(rhoval,alpha);
     }
 
     inline double calculate_V2_prime_rho(const double rhoval){
-        double log_rho = log(rhoval);
-        double numer = (2.0*rhoval - 1.0) * log_rho - (rhoval - 1);
-        double denom = log_rho * log_rho;
-        return numer/denom;
 
+// ex1
+        // if(rhoval == 1) return 1.5;
+        // double log_rho = log(rhoval);
+        // double numer = (2.0*rhoval - 1.0) * log_rho - (rhoval - 1);
+        // double denom = log_rho * log_rho;
+        // return numer/denom;
 
+// ex2
         // return 1;
+
+// ex3
+        double alpha=1.0; return std::pow(rhoval,alpha-1);
     }
     /**
      * update rho
@@ -287,7 +316,7 @@ public:
     void update_rho_for_loop_per_nt(double* rho, const double* rhotmp, const double* mx, const double* my, const double* m2, const int n_start, const int n_end){
 
         // using newton's method
-        const int max_it_newton = 100;
+        const int max_it_newton = 50;
         const double TOL_newton = 1e-6;
 
         for(int n=n_start;n<n_end;++n){
@@ -311,17 +340,17 @@ public:
                     for(int iter_newton=0;iter_newton<max_it_newton;++iter_newton){
 
                         // get the rest of the files
-                        double rhoval = rho[idx];
-                        double V1val  = rhoval;
-                        double V2val  = calculate_V2_rho(rhoval);
-                        double V2primeval = calculate_V2_prime_rho(rhoval);
-                        double F_rho        = - m1val*m1val/(2.0*V1val*V1val)    - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
+                        double rhoval     = rho[idx];                       // rho(x)
+                        double V1val      = rhoval;                         // V1(rho) = rho
+                        double V2val      = calculate_V2_rho(rhoval);       // V2(rho)
+                        double V2primeval = calculate_V2_prime_rho(rhoval); // V2'(rho)
+                        double F_rho        = - m1val*m1val/(2.0*V1val*V1val)   - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
                         double F_prime_rho  =   m1val*m1val/(V1val*V1val*V1val) + m2val*m2val/(V2val*V2val*V2val) * V2primeval * V2primeval + 1.0/tau;
 
                         double newrhoval = rhoval - 0.5 * F_rho / F_prime_rho;
 
                         // update rho
-                        rho[idx] = fmax(1e-3, newrhoval);
+                        rho[idx] = fmax(1e-5, newrhoval);
                     }
                 }
             }

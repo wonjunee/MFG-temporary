@@ -14,23 +14,46 @@ using namespace std;
 
 void initialize_rho_one_to_two(const shared_ptr<double[]>& rho, int n1, int n2, int nt, double base=0){
     int n = 0;
-    double px = 0.2;
-    double py = 0.2;
+    double px = 0.3;
+    double py = 0.3;
     double sum0 = 0, sum1 = 0;
+    double height = 20.0;
     for(int i=0;i<n2;++i){
         for(int j=0;j<n1;++j){
             double x = (j+0.5)/n1;
             double y = (i+0.5)/n2;
 
             n = 0;
-            rho[n*n1*n2+i*n1+j] = 0.7*exp(-100*(pow(x-px,2)+pow(y-py,2))) + base;
+            rho[n*n1*n2+i*n1+j] = height*exp(-100*(pow(x-px,2)+pow(y-py,2))) + base;
             // rho[n*n1*n2+i*n1+j] = 0.5;
 
             n = nt-1;
-            rho[n*n1*n2+i*n1+j] = 0.7*exp(-100*(pow(x-(1-px),2)+pow(y-py,2)));
-            rho[n*n1*n2+i*n1+j]+= 0.7*exp(-100*(pow(x-px,2)+pow(y-(1-py),2)));
-            rho[n*n1*n2+i*n1+j]+= 0.7*exp(-100*(pow(x-(1-px),2)+pow(y-(1-py),2)));
+            rho[n*n1*n2+i*n1+j] = height*exp(-100*(pow(x-(1-px),2)+pow(y-py,2)));
+            rho[n*n1*n2+i*n1+j]+= height*exp(-100*(pow(x-px,2)+pow(y-(1-py),2)));
+            rho[n*n1*n2+i*n1+j]+= height*exp(-100*(pow(x-(1-px),2)+pow(y-(1-py),2)));
             rho[n*n1*n2+i*n1+j]+= base;
+        }
+    }
+    for(int n=1;n<nt-1;++n){
+        for(int i=0;i<n1*n2;++i){
+            rho[n*n1*n2+i] = rho[i];
+        }
+    }
+}
+
+void initialize_rho_one_diagonal(const shared_ptr<double[]>& rho, int n1, int n2, int nt, double base=0){
+    int n = 0;
+    double sum0 = 0, sum1 = 0, height = 20.0;
+    for(int i=0;i<n2;++i){
+        for(int j=0;j<n1;++j){
+            double x = (j+0.5)/n1;
+            double y = (i+0.5)/n2;
+
+            n = 0;
+            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.3,2)+pow(y-0.3,2))) + base;
+
+            n = nt-1;
+            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.7,2)+pow(y-0.7,2))) + base;
         }
     }
     for(int n=1;n<nt-1;++n){
@@ -42,22 +65,22 @@ void initialize_rho_one_to_two(const shared_ptr<double[]>& rho, int n1, int n2, 
 
 void initialize_rho_diagonal(const shared_ptr<double[]>& rho, int n1, int n2, int nt, double base=0){
     int n = 0;
-    double sum0 = 0, sum1 = 0;
+    double sum0 = 0, sum1 = 0, height = 20.0;
     for(int i=0;i<n2;++i){
         for(int j=0;j<n1;++j){
             double x = (j+0.5)/n1;
             double y = (i+0.5)/n2;
 
             n = 0;
-            rho[n*n1*n2+i*n1+j] = exp(-60*(pow(x-0.3,2)+pow(y-0.3,2))) + base;
+            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.3,2)+pow(y-0.3,2))) + base;
             sum0 += rho[n*n1*n2+i*n1+j];
-            rho[n*n1*n2+i*n1+j]+= exp(-60*(pow(x-0.7,2)+pow(y-0.7,2))) + base;
+            rho[n*n1*n2+i*n1+j]+= height * exp(-60*(pow(x-0.7,2)+pow(y-0.7,2))) + base;
             sum0 += rho[n*n1*n2+i*n1+j];
 
             n = nt-1;
-            rho[n*n1*n2+i*n1+j] = exp(-60*(pow(x-0.7,2)+pow(y-0.3,2))) + base;
+            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.7,2)+pow(y-0.3,2))) + base;
             sum1 += rho[n*n1*n2+i*n1+j];
-            rho[n*n1*n2+i*n1+j]+= exp(-60*(pow(x-0.3,2)+pow(y-0.7,2))) + base;
+            rho[n*n1*n2+i*n1+j]+= height * exp(-60*(pow(x-0.3,2)+pow(y-0.7,2))) + base;
             sum1 += rho[n*n1*n2+i*n1+j];
         }
     }
@@ -78,7 +101,8 @@ void initialize_rho_diagonal(const shared_ptr<double[]>& rho, int n1, int n2, in
 
 void initialize_rho(const shared_ptr<double[]>& rho, int n1, int n2, int nt, double base=0){
     // initialize_rho_diagonal(rho, n1, n2, nt, base);
-    initialize_rho_one_to_two(rho, n1, n2, nt, base);
+    initialize_rho_one_diagonal(rho, n1, n2, nt, base);
+    // initialize_rho_one_to_two(rho, n1, n2, nt, base);
 }
 
 int main(int argc, char **argv)
@@ -101,7 +125,7 @@ int main(int argc, char **argv)
     int max_iteration=stoi(argv[7]);
     int skip=stoi(argv[8]);
     
-    double base=0.1;
+    double base=2;
 
     shared_ptr<double[]> rho(new double[n1*n2*nt]);
 

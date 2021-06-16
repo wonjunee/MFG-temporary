@@ -93,8 +93,8 @@ def save_animation():
         cax.set_array(rho[n])
         
         # cax.set_clim(0, vmax)
-        cax.set_clim(vmin, vmax)
-        # cax.set_clim(np.min(rho[n]), np.max(rho[n]))
+        # cax.set_clim(vmin, vmax)
+        cax.set_clim(np.min(rho[n]), np.max(rho[n]))
         
         
 

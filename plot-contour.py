@@ -110,3 +110,35 @@ def save_animation():
     anim.save("video.mp4", fps=10)
 
 save_animation()
+
+
+def save_animation_1d():
+    # First set up the figure, the axis, and the plot element we want to animate
+    fig, ax = plt.subplots(1,1,figsize=(5,5))
+    # fig.subplots_adjust(bottom=0, top=0.9, right=1, left=0.1, hspace=0.1, wspace=0)
+
+    cax, = ax.plot(np.linspace(0,1,n1),np.diag(rho[0]))
+    
+    # plt.tight_layout()
+
+    vmin = np.min(rho)
+    vmax = np.max(rho)
+
+    ax.set_ylim([0,vmax*1.2])
+    ax.set_xlim([0,1])
+    
+    # animation function.  This is called sequentially
+    def animate(n):
+        # fig.clear()
+        cax.set_data(np.linspace(0,1,n1),np.diag(rho[n]))
+        # ax.plot([rho[n][i,i] for i in range(n1)])
+        
+        ax.set_title("Video: {}\nMin: {:.4}\nMax: {:.4}".format(n,np.min(rho[n]),np.max(rho[n])))
+        return cax, 
+
+    # call the animator.  blit=True means only re-draw the parts that have changed.
+    anim = animation.FuncAnimation(fig, animate, 
+                                   frames=nt, interval=100, blit=True)
+    anim.save("video2.mp4", fps=10)
+
+save_animation_1d()

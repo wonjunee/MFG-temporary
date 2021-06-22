@@ -267,7 +267,7 @@ public:
         // return rhoval;
 
 // ex2
-        double alpha=1.0; return std::pow(rhoval,alpha);
+        double alpha=0.5; return std::pow(rhoval,alpha);
     }
 
     inline double calculate_V1_prime_rho(const double rhoval){
@@ -276,7 +276,7 @@ public:
         // return 1;
 
 // ex2
-        double alpha=1.0; return std::pow(rhoval,alpha-1);
+        double alpha=0.5; return std::pow(rhoval,alpha-1);
     }
 
 
@@ -290,7 +290,7 @@ public:
         // return rhoval;
 
 // ex3
-        double alpha=1.0; return std::pow(rhoval,alpha);
+        double alpha=0.5; return std::pow(rhoval,alpha);
     }
 
     inline double calculate_V2_prime_rho(const double rhoval){
@@ -306,7 +306,7 @@ public:
         // return 1;
 
 // ex3
-        double alpha=1.0; return std::pow(rhoval,alpha-1);
+        double alpha=0.5; return std::pow(rhoval,alpha-1);
     }
     /**
      * update rho
@@ -341,11 +341,12 @@ public:
 
                         // get the rest of the files
                         double rhoval     = rho[idx];                       // rho(x)
-                        double V1val      = rhoval;                         // V1(rho) = rho
+                        double V1val      = calculate_V1_rho(rhoval);       // V1(rho)
+                        double V1primeval = calculate_V1_prime_rho(rhoval); // V1'(rho)
                         double V2val      = calculate_V2_rho(rhoval);       // V2(rho)
                         double V2primeval = calculate_V2_prime_rho(rhoval); // V2'(rho)
-                        double F_rho        = - m1val*m1val/(2.0*V1val*V1val)   - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
-                        double F_prime_rho  =   m1val*m1val/(V1val*V1val*V1val) + m2val*m2val/(V2val*V2val*V2val) * V2primeval * V2primeval + 1.0/tau;
+                        double F_rho        = - m1val*m1val/(2.0*V1val*V1val) * V1primeval  - m2val*m2val/(2.0*V2val*V2val) * V2primeval - Dtphi + (rhoval - rhotmpval) / tau;
+                        double F_prime_rho  =   m1val*m1val/(V1val*V1val*V1val) * V1primeval * V1primeval + m2val*m2val/(V2val*V2val*V2val) * V2primeval * V2primeval + 1.0/tau;
 
                         double newrhoval = rhoval - 0.5 * F_rho / F_prime_rho;
 

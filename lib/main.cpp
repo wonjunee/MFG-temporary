@@ -50,10 +50,10 @@ void initialize_rho_one_diagonal(const shared_ptr<double[]>& rho, int n1, int n2
             double y = (i+0.5)/n2;
 
             n = 0;
-            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.3,2)+pow(y-0.3,2))) + base;
+            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.4,2)+pow(y-0.4,2))) + base;
 
             n = nt-1;
-            rho[n*n1*n2+i*n1+j] = height * exp(-60*(pow(x-0.7,2)+pow(y-0.7,2))) + base;
+            rho[n*n1*n2+i*n1+j] = 2 * height * exp(-60*(pow(x-0.6,2)+pow(y-0.6,2))) + base;
         }
     }
     for(int n=1;n<nt-1;++n){
